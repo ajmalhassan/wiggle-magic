@@ -38,6 +38,146 @@
   blockquote { margin: 0; padding: 16px 18px; border-left: 3px solid var(--accent-b); background: var(--card); border-radius: 8px; color: #d6dbe6; font-style: italic; }
   code.kbd { padding: 1px 6px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; background: #0e1219; color: var(--fg); font-size: 12px; }
 
+  /* ---------- themed demo cards (slices of real sites) ---------- */
+  .demos { display: grid; gap: 18px; }
+  .demo { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px 16px; position: relative; }
+  .demo-h { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; }
+  .demo-h h3 { margin: 0; font-size: 17px; letter-spacing: -0.01em; }
+  .demo-tag {
+    font-size: 10.5px; color: var(--accent-a);
+    background: rgba(125, 249, 255, 0.08);
+    border: 1px solid rgba(125, 249, 255, 0.22);
+    padding: 3px 9px; border-radius: 999px;
+    letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600;
+  }
+  .demo-hint {
+    margin: 14px 0 0; padding-top: 12px;
+    border-top: 1px dashed var(--line);
+    color: var(--muted); font-size: 12.5px;
+  }
+  .demo-hint i { color: #d6dbe6; font-style: italic; }
+  .demo-intro { color: var(--muted); margin: 0 0 22px; font-size: 14px; }
+
+  /* shopping */
+  .shop-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .shop-card { border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: rgba(255,255,255,0.015); }
+  .shop-img {
+    height: 78px; border-radius: 6px; margin-bottom: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(231,236,243,0.55); font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+    background: linear-gradient(135deg, #1f2535 0%, #2a3247 100%);
+  }
+  .shop-card h4 { margin: 0 0 4px; font-size: 13.5px; }
+  .shop-price { margin: 0 0 8px; font-size: 15px; font-weight: 700; color: var(--accent-a); font-variant-numeric: tabular-nums; }
+  .shop-specs { list-style: none; padding: 0; margin: 0; color: var(--muted); font-size: 12px; }
+  .shop-specs li { padding: 2px 0; }
+
+  /* real estate */
+  .home-grid { display: grid; grid-template-columns: 220px 1fr; gap: 18px; align-items: start; }
+  .home-img {
+    height: 160px; border-radius: 10px;
+    background:
+      radial-gradient(circle at 70% 30%, rgba(255,213,122,0.22), transparent 60%),
+      linear-gradient(135deg, #243044 0%, #1a1f2f 100%);
+    position: relative; overflow: hidden;
+  }
+  .home-img::after {
+    content: ""; position: absolute; left: 22%; right: 14%; bottom: 18%; height: 42%;
+    background: #1b2030;
+    clip-path: polygon(0 32%, 50% 0, 100% 32%, 100% 100%, 0 100%);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+  }
+  .home-price { margin: 0 0 4px; font-size: 24px; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .home-addr { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+  .home-stats { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0 0 12px; font-size: 12.5px; color: #d6dbe6; }
+  .home-stats span b { color: var(--accent-a); font-weight: 600; }
+  .home-blurb { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .home-blurb b { color: #d6dbe6; font-weight: 500; }
+
+  /* recipe */
+  .recipe-meta { color: var(--muted); font-size: 12px; margin: -6px 0 12px; }
+  .recipe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .recipe-grid h4 { margin: 0 0 8px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+  .recipe-ing { list-style: none; padding: 0; margin: 0; font-size: 13px; }
+  .recipe-ing li { padding: 5px 0; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 12px; }
+  .recipe-ing li:last-child { border-bottom: 0; }
+  .recipe-ing b { color: #d6dbe6; font-weight: 500; }
+  .recipe-ing span { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .recipe-method { padding-left: 18px; margin: 0; color: #d6dbe6; font-size: 13px; line-height: 1.7; }
+  .recipe-method li { padding: 2px 0; }
+
+  /* news + chart */
+  .news .headline { margin: 4px 0 6px; font-size: 19px; line-height: 1.3; letter-spacing: -0.01em; }
+  .news .byline { margin: 0 0 12px; font-size: 12px; color: var(--muted); }
+  .news .body { margin: 0 0 12px; font-size: 13.5px; line-height: 1.6; color: #d6dbe6; }
+  .news .chart-wrap { margin: 14px 0; }
+  .news .chart-cap { font-size: 11px; color: var(--muted); margin: 6px 0 0; }
+  .news .pull {
+    margin: 12px 0 0; padding: 12px 16px;
+    border-left: 3px solid var(--accent-c);
+    background: rgba(255,122,217,0.04);
+    border-radius: 6px; font-size: 14px; color: #e7ecf3; font-style: italic;
+  }
+
+  /* job */
+  .job-head { display: flex; gap: 14px; align-items: center; margin-bottom: 10px; }
+  .job-logo {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: linear-gradient(135deg, #7df9ff, #b07cff);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: #0b0d12; font-size: 17px;
+  }
+  .job-meta { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+  .job-meta b { color: var(--fg); font-weight: 600; font-size: 15px; display: block; }
+  .job-salary {
+    display: inline-block; padding: 3px 10px;
+    background: rgba(125,249,255,0.08);
+    border: 1px solid rgba(125,249,255,0.22);
+    border-radius: 999px; font-size: 12px; color: var(--accent-a);
+    margin-bottom: 12px; font-variant-numeric: tabular-nums;
+  }
+  .job h5 { margin: 12px 0 6px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+  .job .role-summary { margin: 0 0 10px; font-size: 13.5px; color: #d6dbe6; line-height: 1.55; }
+  .job ul { padding-left: 18px; margin: 0; color: #d6dbe6; font-size: 13px; line-height: 1.6; }
+  .job ul li { padding: 2px 0; }
+
+  /* code diff */
+  .diff {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px;
+    background: #0e1219;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .diff-head {
+    padding: 8px 14px;
+    background: rgba(255,255,255,0.025);
+    border-bottom: 1px solid var(--line);
+    color: var(--muted); font-size: 12px;
+    display: flex; justify-content: space-between;
+  }
+  .diff-line {
+    padding: 1px 14px 1px 30px;
+    position: relative; white-space: pre;
+    color: #b8c0d2; line-height: 1.65;
+  }
+  .diff-line::before {
+    content: attr(data-marker);
+    position: absolute; left: 12px;
+    color: rgba(138,147,166,0.5);
+  }
+  .diff-line.add { background: rgba(125,249,255,0.06); color: #c5f8fd; }
+  .diff-line.add::before { color: var(--accent-a); }
+  .diff-line.del { background: rgba(255,122,217,0.06); color: #fbcdef; }
+  .diff-line.del::before { color: var(--accent-c); }
+
+  @media (max-width: 640px) {
+    .shop-row { grid-template-columns: 1fr; }
+    .home-grid { grid-template-columns: 1fr; }
+    .recipe-grid { grid-template-columns: 1fr; }
+  }
+
   /* ---------- wiggle overlay layer ---------- */
 
   /* Aurora glow at the viewport edges. No hard mask boundary — the gradient is */
@@ -429,18 +569,208 @@
   </section>
 
   <section>
-    <h2>Things to point at</h2>
-    <div class="grid">
-      <div class="card"><h3>A small card</h3><p>Some descriptive text inside a bordered container. After triggering, hover this card and click to select it.</p></div>
-      <div class="card"><h3>Another card</h3><p>Cards, paragraphs, headings, images — all selectable. The highlight box adapts to whatever your cursor lands on.</p></div>
-      <figure>
-        <img alt="abstract gradient" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 220'><defs><linearGradient id='g' x1='0' x2='1' y1='0' y2='1'><stop offset='0' stop-color='%237df9ff'/><stop offset='0.5' stop-color='%23b07cff'/><stop offset='1' stop-color='%23ff7ad9'/></linearGradient></defs><rect width='400' height='220' fill='url(%23g)'/></svg>" />
-        <figcaption>An image is just another element.</figcaption>
-      </figure>
-      <figure>
-        <img alt="grid" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 220'><rect width='400' height='220' fill='%23141823'/><g stroke='%23222838' stroke-width='1'><path d='M0 55H400M0 110H400M0 165H400'/><path d='M80 0V220M160 0V220M240 0V220M320 0V220'/></g></svg>" />
-        <figcaption>Try selecting the caption text alone.</figcaption>
-      </figure>
+    <h2>Where you'd use this</h2>
+    <p class="demo-intro">Six slices of real-world sites. After wiggling, circle whatever you'd actually want to ask about — text, an image, a row, a snippet of code.</p>
+
+    <div class="demos">
+
+      <!-- 1. Product comparison -->
+      <article class="demo" aria-label="Product comparison demo">
+        <header class="demo-h">
+          <span class="demo-tag">Shopping</span>
+          <h3>Compare strollers</h3>
+        </header>
+        <div class="shop-row">
+          <div class="shop-card" data-sku="STR-9821" data-brand="UPPAbaby">
+            <div class="shop-img" aria-label="UPPAbaby Vista V2 product photo">Vista V2</div>
+            <h4>UPPAbaby Vista V2</h4>
+            <p class="shop-price" data-price="969.99">$969.99</p>
+            <ul class="shop-specs">
+              <li>26.3 lbs · one-hand fold</li>
+              <li>Holds up to 3 kids</li>
+              <li>★ 4.8 (2,431)</li>
+            </ul>
+          </div>
+          <div class="shop-card" data-sku="STR-4407" data-brand="Bugaboo">
+            <div class="shop-img" aria-label="Bugaboo Fox 5 product photo">Fox 5</div>
+            <h4>Bugaboo Fox 5</h4>
+            <p class="shop-price" data-price="1299.00">$1,299.00</p>
+            <ul class="shop-specs">
+              <li>24.1 lbs · all-terrain wheels</li>
+              <li>Reversible bassinet</li>
+              <li>★ 4.7 (894)</li>
+            </ul>
+          </div>
+          <div class="shop-card" data-sku="STR-1199" data-brand="Nuna">
+            <div class="shop-img" aria-label="Nuna Mixx Next product photo">Mixx Next</div>
+            <h4>Nuna Mixx Next</h4>
+            <p class="shop-price" data-price="749.95">$749.95</p>
+            <ul class="shop-specs">
+              <li>27.0 lbs · magnetic buckle</li>
+              <li>Newborn to 50 lbs</li>
+              <li>★ 4.6 (1,127)</li>
+            </ul>
+          </div>
+        </div>
+        <p class="demo-hint">Circle two or three cards → <i>"which one for a 4-year-old plus a newborn?"</i></p>
+      </article>
+
+      <!-- 2. Real estate -->
+      <article class="demo" aria-label="Real estate listing demo">
+        <header class="demo-h">
+          <span class="demo-tag">Real estate</span>
+          <h3>For sale</h3>
+        </header>
+        <div class="home-grid">
+          <div class="home-img" role="img" aria-label="House exterior photo"></div>
+          <div>
+            <p class="home-price" data-price="1289000">$1,289,000</p>
+            <p class="home-addr">1247 Oakwood Ave · Glendale, CA 91205</p>
+            <div class="home-stats">
+              <span><b>3</b> beds</span>
+              <span><b>2.5</b> baths</span>
+              <span><b>2,140</b> sqft</span>
+              <span>Built <b>1962</b></span>
+              <span>Lot <b>7,200</b> sqft</span>
+              <span>HOA <b>None</b></span>
+            </div>
+            <p class="home-blurb">Quiet, tree-lined block in <b>Oakwood Heights</b>. Walking distance to Adams Elementary (8/10) and the Glendale farmers market. Newly remodeled kitchen, original hardwood floors throughout.</p>
+          </div>
+        </div>
+        <p class="demo-hint">Circle the price + the HOA + the neighborhood blurb → <i>"is this a good deal for a family of 4?"</i></p>
+      </article>
+
+      <!-- 3. Recipe -->
+      <article class="demo" aria-label="Recipe demo">
+        <header class="demo-h">
+          <span class="demo-tag">Recipe</span>
+          <h3>Miso-glazed salmon with brown butter</h3>
+        </header>
+        <p class="recipe-meta">Serves 2 · 25 minutes · ~480 kcal/serving</p>
+        <div class="recipe-grid">
+          <div>
+            <h4>Ingredients</h4>
+            <ul class="recipe-ing">
+              <li><b>Salmon fillets, skin on</b><span>2 × 6 oz</span></li>
+              <li><b>White miso paste</b><span>2 tbsp</span></li>
+              <li><b>Mirin</b><span>1 tbsp</span></li>
+              <li><b>Soy sauce</b><span>1 tbsp</span></li>
+              <li><b>Unsalted butter</b><span>3 tbsp</span></li>
+              <li><b>Lemon, zested</b><span>½</span></li>
+              <li><b>Scallions, sliced</b><span>2</span></li>
+            </ul>
+          </div>
+          <div>
+            <h4>Method</h4>
+            <ol class="recipe-method">
+              <li>Whisk miso, mirin, soy. Brush onto salmon.</li>
+              <li>Sear skin-side down 4 min, flip 2 min.</li>
+              <li>Brown the butter, add zest, spoon over.</li>
+              <li>Top with scallions, serve over rice.</li>
+            </ol>
+          </div>
+        </div>
+        <p class="demo-hint">Circle the ingredient list → <i>"scale to 6 servings and make it dairy-free."</i></p>
+      </article>
+
+      <!-- 4. News + chart -->
+      <article class="demo news" aria-label="News article demo">
+        <header class="demo-h">
+          <span class="demo-tag">News · Tech</span>
+        </header>
+        <h3 class="headline">Browsers add native AI APIs faster than the spec can keep up</h3>
+        <p class="byline">By Maya Okafor · May 12, 2026 · 6 min read</p>
+        <p class="body">Three major browser vendors shipped on-device language models this quarter, each behind a different flag and a different API shape. Developers building AI-augmented sites are choosing between fragmenting their integrations or waiting for the WICG draft to settle — which may not happen until late 2027.</p>
+        <div class="chart-wrap" role="img" aria-label="Bar chart: cumulative on-device AI APIs shipped by browsers, Q1 2025 to Q2 2026">
+          <svg viewBox="0 0 360 110" width="100%" height="110" preserveAspectRatio="none">
+            <g font-family="ui-monospace, Menlo, monospace" font-size="9" fill="#8a93a6">
+              <text x="2"   y="105">Q1'25</text>
+              <text x="92"  y="105">Q3'25</text>
+              <text x="182" y="105">Q1'26</text>
+              <text x="272" y="105">Q2'26</text>
+            </g>
+            <g>
+              <rect x="2"   y="80" width="60" height="12" fill="#7df9ff" opacity="0.85"/>
+              <rect x="92"  y="60" width="60" height="32" fill="#7df9ff" opacity="0.85"/>
+              <rect x="182" y="40" width="60" height="52" fill="#7df9ff" opacity="0.85"/>
+              <rect x="272" y="14" width="60" height="78" fill="#7df9ff" opacity="0.95"/>
+            </g>
+            <g font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#7df9ff">
+              <text x="24"  y="74">1</text>
+              <text x="114" y="54">3</text>
+              <text x="204" y="34">5</text>
+              <text x="294" y="8">8</text>
+            </g>
+          </svg>
+          <p class="chart-cap">Cumulative count of on-device AI APIs shipped across Chromium, Gecko, and WebKit (vendor flags included).</p>
+        </div>
+        <blockquote class="pull">"We've built the same prompt API four times this year. The fifth one will probably be the standard."</blockquote>
+        <p class="demo-hint">Circle the headline, the chart, and the pull quote → <i>"summarize this for me in two bullets."</i></p>
+      </article>
+
+      <!-- 5. Job posting -->
+      <article class="demo job" aria-label="Job posting demo">
+        <header class="demo-h">
+          <span class="demo-tag">Jobs</span>
+        </header>
+        <div class="job-head">
+          <div class="job-logo" aria-hidden="true">Lm</div>
+          <div class="job-meta">
+            <b>Senior Frontend Engineer, AI Surfaces</b>
+            Luminary · San Francisco (hybrid) · Full-time
+          </div>
+        </div>
+        <span class="job-salary" data-min="180000" data-max="245000">$180k – $245k + equity</span>
+
+        <h5>About the role</h5>
+        <p class="role-summary">Build the human-facing surfaces of our AI assistant — gesture-driven selection, in-context chat, multi-modal pickers. You'll partner with design and ML on features that live half in the browser and half in our model layer.</p>
+
+        <h5>What you bring</h5>
+        <ul>
+          <li>5+ years building production frontend with React or similar</li>
+          <li>Comfort with Canvas, WebGL, or fine-grained DOM perf work</li>
+          <li>A track record of shipping novel interactions, not just CRUD</li>
+          <li>Bonus: experience streaming LLM responses into UIs</li>
+        </ul>
+
+        <h5>Nice to have</h5>
+        <ul>
+          <li>Open-source work in AI dev tooling</li>
+          <li>Background in accessibility for non-standard input gestures</li>
+        </ul>
+
+        <p class="demo-hint">Circle the requirements list → <i>"tailor my resume bullets to this JD."</i></p>
+      </article>
+
+      <!-- 6. GitHub diff -->
+      <article class="demo" aria-label="Code review diff demo">
+        <header class="demo-h">
+          <span class="demo-tag">Code review</span>
+          <h3>PR #482 · src/wiggle/detector.ts</h3>
+        </header>
+        <div class="diff" role="region" aria-label="Unified diff">
+          <div class="diff-head">
+            <span>+5 / −2</span>
+            <span>detector.ts</span>
+          </div>
+          <div class="diff-line"     data-marker=" ">function detect(samples: Sample[]): boolean {</div>
+          <div class="diff-line del" data-marker="-">  if (samples.length &lt; 5) return false;</div>
+          <div class="diff-line add" data-marker="+">  if (samples.length &lt; opts.minSamples) return false;</div>
+          <div class="diff-line"     data-marker=" ">  let reversals = 0, dirPrev = 0;</div>
+          <div class="diff-line"     data-marker=" ">  for (let i = 1; i &lt; samples.length; i++) {</div>
+          <div class="diff-line"     data-marker=" ">    const dx = samples[i].x - samples[i - 1].x;</div>
+          <div class="diff-line add" data-marker="+">    if (Math.abs(dx) &lt; opts.minDx) continue;</div>
+          <div class="diff-line"     data-marker=" ">    const dir = dx &gt; 0 ? 1 : -1;</div>
+          <div class="diff-line del" data-marker="-">    if (dir !== dirPrev) reversals++;</div>
+          <div class="diff-line add" data-marker="+">    if (dirPrev &amp;&amp; dir !== dirPrev) reversals++;</div>
+          <div class="diff-line"     data-marker=" ">    dirPrev = dir;</div>
+          <div class="diff-line"     data-marker=" ">  }</div>
+          <div class="diff-line add" data-marker="+">  return reversals &gt;= opts.minReversals;</div>
+          <div class="diff-line"     data-marker=" ">}</div>
+        </div>
+        <p class="demo-hint">Circle the function → <i>"explain it, and is the guard on the new line correct?"</i></p>
+      </article>
+
     </div>
   </section>
 

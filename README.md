@@ -62,3 +62,7 @@ Wiggle to enter selection mode, wiggle (or Esc) to leave.
 
 `gesture` · `mouse-gesture` · `ai` · `cursor` · `javascript` · `wiggle-gesture` · `google-io`
 
+## License
+
+MIT — see [LICENSE](LICENSE).
+
