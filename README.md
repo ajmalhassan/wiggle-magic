@@ -1,8 +1,10 @@
 # wiggle-magic
 
-A tiny web sketch that listens for a **cursor wiggle** gesture and turns the page into an AI selection canvas.
+> Proof-of-concept / early sketch. Inspired by Google's **Magic Pointer / Wiggle gesture** demo from *The Android Show @ I/O 2026* — re-imagined for the web.
 
-Wiggle briskly anywhere on the page → the native cursor is swapped for a glowing gradient pointer, an aurora glow lights up the viewport edges, and you can pick any element (or several) to send to an AI. Click **Ask AI** and a chat pill rises from the bottom and expands into a floating sheet.
+A tiny single-file experiment that listens for a **cursor wiggle** gesture and turns any web page into an AI selection canvas.
+
+Wiggle briskly anywhere on the page → the native cursor is swapped for a glowing gradient pointer, an aurora glow lights up the viewport edges, and you can pick any element (or several) to send to an AI. Click **Ask AI** (or press <kbd>↩</kbd>) and a chat pill rises from the bottom and expands into a floating sheet.
 
 ## Try it
 
@@ -55,3 +57,8 @@ Defaults live in the `opts` block at the top of the script:
 ```
 
 Wiggle to enter selection mode, wiggle (or Esc) to leave.
+
+## Topics
+
+`gesture` · `mouse-gesture` · `ai` · `cursor` · `javascript` · `wiggle-gesture` · `google-io`
+

@@ -171,6 +171,16 @@
     font-size: 11px;
     font-variant-numeric: tabular-nums;
   }
+  #wm-popover .kbd {
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    min-width: 16px; height: 18px;
+    padding: 0 5px;
+    background: rgba(11, 13, 18, 0.28);
+    border-radius: 5px;
+    font-size: 12px;
+    line-height: 1;
+  }
 
   /* Element highlight box that follows hover during selection. */
   #wm-highlight {
@@ -452,6 +462,7 @@
         <polygon points="0,-2.6 0.7,-0.7 2.6,0 0.7,0.7 0,2.6 -0.7,0.7 -2.6,0 -0.7,-0.7" fill="#0b0d12"/>
       </svg>
       <span>Ask AI</span>
+      <span class="kbd" aria-label="press Enter to commit">⏎</span>
       <span class="count" aria-label="selected items">0</span>
     </button>
   </div>
@@ -516,10 +527,12 @@
   // ---------- state ----------
   let state = 'idle';         // 'idle' | 'activating' | 'selecting' | 'sheet'
   let samples = [];           // {x, y, t}
-  let prevDir = 0;
   let lastTrigger = 0;
   let cursorX = 0, cursorY = 0;
   let rafPending = false;
+  let popoverX = 0, popoverY = 0, popoverW = 0, popoverH = 0;
+  let lastHighlightEl = null;
+  let viewportShiftPending = false;
   const selections = [];      // [{ el, marker, payload }]
 
   // ---------- wiggle detector ----------
@@ -527,10 +540,8 @@
     cursorX = e.clientX;
     cursorY = e.clientY;
 
-    // While selection mode is up, keep the cursor + highlight in sync.
-    if (state === 'selecting') schedulePaint();
-    // During the activation animation and while the chat sheet is up, ignore wiggle sampling.
     if (state === 'activating' || state === 'sheet') return;
+    if (state === 'selecting') schedulePaint();
 
     const now = performance.now();
     if (now - lastTrigger < opts.cooldownMs) return;
@@ -601,11 +612,11 @@
     for (const sel of selections) sel.marker.remove();
     selections.length = 0;
     samples.length = 0;
+    lastHighlightEl = null;
     status.textContent = 'wiggle to activate';
   }
 
   function spawnBurst(x, y) {
-    // expanding rings
     for (const cls of ['', 'b', 'c']) {
       const ring = document.createElement('div');
       ring.className = 'wm-ring' + (cls ? ' ' + cls : '');
@@ -614,7 +625,6 @@
       ripples.appendChild(ring);
       ring.addEventListener('animationend', () => ring.remove(), { once: true });
     }
-    // sparkle particles
     const n = 10;
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2 + Math.random() * 0.4;
@@ -650,37 +660,49 @@
     cursor.style.transform = `translate(${x}px, ${y}px) scale(1)`;
   }
 
+  function applyRectBox(node, rect) {
+    node.style.transform = `translate(${rect.left}px, ${rect.top}px)`;
+    node.style.width  = rect.width  + 'px';
+    node.style.height = rect.height + 'px';
+  }
+
+  function isOverlayHit(el) {
+    return overlayEls.has(el) || !!(el.closest && el.closest('#wm-popover'));
+  }
+
   function paintHighlight() {
     const el = document.elementFromPoint(cursorX, cursorY);
-    if (!el || overlayEls.has(el) || el.closest('#wm-popover') ||
-        el === document.documentElement || el === document.body) {
-      highlight.style.opacity = 0;
+    if (!el || isOverlayHit(el) || el === document.documentElement || el === document.body) {
+      if (lastHighlightEl !== null) {
+        highlight.style.opacity = 0;
+        lastHighlightEl = null;
+      }
       return;
     }
+    if (el === lastHighlightEl) return;
+    lastHighlightEl = el;
     const r = el.getBoundingClientRect();
     if (r.width < 2 || r.height < 2) { highlight.style.opacity = 0; return; }
     highlight.style.opacity = 1;
-    highlight.style.transform = `translate(${r.left}px, ${r.top}px)`;
-    highlight.style.width  = r.width  + 'px';
-    highlight.style.height = r.height + 'px';
-    highlight.dataset.tag = el.tagName.toLowerCase();
+    applyRectBox(highlight, r);
   }
 
   // The popover trails the cursor with an offset, but freezes when the user
   // moves the cursor onto it so the Ask AI button is actually clickable.
+  // Dimensions are cached in togglePick to avoid a forced layout every frame.
   function paintPopover() {
     if (selections.length === 0) return;
-    const pr = popover.getBoundingClientRect();
-    const isOver = cursorX >= pr.left && cursorX <= pr.right &&
-                   cursorY >= pr.top  && cursorY <= pr.bottom;
+    const isOver = cursorX >= popoverX && cursorX <= popoverX + popoverW &&
+                   cursorY >= popoverY && cursorY <= popoverY + popoverH;
     if (isOver) return;
     const OFFX = 24, OFFY = 14;
     let px = cursorX + OFFX;
     let py = cursorY + OFFY;
-    if (px + pr.width  > window.innerWidth  - 10) px = cursorX - pr.width  - 12;
-    if (py + pr.height > window.innerHeight - 10) py = cursorY - pr.height - 14;
+    if (px + popoverW > window.innerWidth  - 10) px = cursorX - popoverW - 12;
+    if (py + popoverH > window.innerHeight - 10) py = cursorY - popoverH - 14;
     if (px < 10) px = 10;
     if (py < 10) py = 10;
+    popoverX = px; popoverY = py;
     popover.style.transform = `translate(${px}px, ${py}px)`;
   }
 
@@ -700,6 +722,9 @@
     if (selections.length > 0) {
       popoverCount.textContent = selections.length;
       popover.classList.add('visible');
+      // Cache dimensions here (not every paint) — count changes are the only thing that resizes the popover.
+      popoverW = popover.offsetWidth;
+      popoverH = popover.offsetHeight;
       paintPopover();
     } else {
       popover.classList.remove('visible');
@@ -707,10 +732,7 @@
   }
 
   function positionMarker(marker, el) {
-    const r = el.getBoundingClientRect();
-    marker.style.transform = `translate(${r.left}px, ${r.top}px)`;
-    marker.style.width  = r.width  + 'px';
-    marker.style.height = r.height + 'px';
+    applyRectBox(marker, el.getBoundingClientRect());
   }
 
   function repaintMarkers() {
@@ -773,13 +795,11 @@
     popover.classList.remove('visible');
     status.textContent = 'type your question · Esc to close';
 
-    // Fill chips (one per selection).
     sheetChips.innerHTML = '';
     for (const p of payloads) {
       const chip = document.createElement('div');
       chip.className = 'chip';
-      const raw = p.text || (p.image && p.image.alt) || (p.link && p.link.href) || p.value || `<${p.tag}>`;
-      const label = String(raw).replace(/\s+/g, ' ').trim();
+      const label = labelFor(p);
       chip.textContent = label.slice(0, 42) + (label.length > 42 ? '…' : '');
       chip.title = label;
       sheetChips.appendChild(chip);
@@ -802,6 +822,7 @@
       selections.length = 0;
       document.body.classList.remove('wm-active');
       samples.length = 0;
+      lastHighlightEl = null;
       state = 'idle';
       status.textContent = 'wiggle to activate';
     }, 700);
@@ -818,8 +839,7 @@
 
   function showCommitToast(payloads, question) {
     const parts = payloads.slice(0, 3).map(p => {
-      const raw = p.text || (p.image && p.image.alt) || (p.link && p.link.href) || p.tag;
-      const s = (raw || '').replace(/\s+/g, ' ');
+      const s = labelFor(p);
       return `“${s.slice(0, 28)}${s.length > 28 ? '…' : ''}”`;
     }).join(' · ');
     const extra = payloads.length > 3 ? ` + ${payloads.length - 3} more` : '';
@@ -840,12 +860,18 @@
     e.preventDefault();
     e.stopPropagation();
     const el = document.elementFromPoint(e.clientX, e.clientY);
-    if (!el || overlayEls.has(el) || el.closest('#wm-popover')) return;
+    if (!el || isOverlayHit(el)) return;
     togglePick(el);
   }
 
   function escapeHtml(s) {
     return s.replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+
+  // Best readable label for a payload — used for chips and toasts.
+  function labelFor(p) {
+    const raw = p.text || (p.image && p.image.alt) || (p.link && p.link.href) || p.value || `<${p.tag}>`;
+    return String(raw).replace(/\s+/g, ' ').trim();
   }
 
   // Compact-ish CSS selector path. Stops as soon as it finds something unique.
@@ -889,7 +915,18 @@
   });
   // Selection markers use fixed coords from getBoundingClientRect; reposition
   // whenever the viewport shifts so they stay glued to their elements.
-  const onViewportShift = () => { if (state === 'selecting') repaintMarkers(); };
+  // Coalesce to one rAF — scroll capture fires synchronously per scrollable ancestor.
+  const onViewportShift = () => {
+    if (state !== 'selecting' || viewportShiftPending) return;
+    viewportShiftPending = true;
+    requestAnimationFrame(() => {
+      viewportShiftPending = false;
+      if (state !== 'selecting') return;
+      repaintMarkers();
+      lastHighlightEl = null;
+      paintHighlight();
+    });
+  };
   window.addEventListener('scroll', onViewportShift, true);
   window.addEventListener('resize', onViewportShift);
 
