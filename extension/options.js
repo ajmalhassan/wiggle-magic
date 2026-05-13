@@ -32,17 +32,17 @@ async function load() {
   keyEl.value      = wm_settings.apiKey   || '';
   modelEl.value    = wm_settings.model    || '';
   updateHint();
-  checkNano();
   if (!wm_welcomed) welcomeEl.hidden = false;
+  checkNano();
 }
 
-function dismissWelcome() {
+async function dismissWelcome() {
   welcomeEl.hidden = true;
-  chrome.storage.sync.set({ wm_welcomed: true });
+  await chrome.storage.sync.set({ wm_welcomed: true });
 }
-welcomeGo.addEventListener('click', () => {
-  dismissWelcome();
-  document.querySelector('section:not(.welcome)').scrollIntoView({ behavior: 'smooth', block: 'start' });
+welcomeGo.addEventListener('click', async () => {
+  await dismissWelcome();
+  document.getElementById('ai-backend').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 welcomeSkip.addEventListener('click', dismissWelcome);
 
