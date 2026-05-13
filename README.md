@@ -2,11 +2,21 @@
 
 > Proof-of-concept / early sketch. Inspired by Google's **Magic Pointer / Wiggle gesture** demo from *The Android Show @ I/O 2026* — re-imagined for the web.
 
-A tiny single-file experiment that listens for a **cursor wiggle** gesture and turns any web page into an AI selection canvas.
+Wiggle your cursor briskly on any web page → the native cursor swaps to a glowing gradient pointer, an aurora glow lights up the viewport edges, and you can pick any element (or several) to ask AI about. Answers stream in as rendered markdown; save them to a local memory you can revisit anytime.
 
-Wiggle briskly anywhere on the page → the native cursor is swapped for a glowing gradient pointer, an aurora glow lights up the viewport edges, and you can pick any element (or several) to send to an AI. Click **Ask AI** (or press <kbd>↩</kbd>) and a chat pill rises from the bottom and expands into a floating sheet.
+[**Live demo →**](https://ajmalhassan.github.io/wiggle-magic/)
 
-## Try it
+## Two ways to try it
+
+### 1. Chrome extension — use it on any page
+
+A Manifest V3 extension in [`extension/`](extension/) brings the gesture to every site you visit. Answers come from **Gemini Nano on-device** (Chrome 138+, no API key needed) — with **BYOK fallback** to OpenAI / Anthropic / Gemini when Nano isn't available. Save answers to local memory; export to Markdown anytime. Nothing leaves your machine on the Nano path; with BYOK, prompts go directly from your browser to the provider you chose (there is no Wiggle Magic server).
+
+See [`extension/README.md`](extension/README.md) for load instructions.
+
+### 2. Single-file demo — feel the gesture
+
+The static `index.html` is a self-contained tour: wiggle detector, selection UI, and themed mock cards (shopping, real estate, recipes, news, jobs, code diffs) showing where this lives in the real world. No backend, no AI calls — it just dispatches a `wiggle:ask` event you can hook your own model into.
 
 ```bash
 python3 -m http.server 8765
@@ -15,13 +25,9 @@ python3 -m http.server 8765
 
 No build step, no dependencies — `index.html` + `cursor.svg`.
 
-## Or use it on any page (Chrome extension)
+## Library API (the demo)
 
-A Manifest V3 extension lives in [`extension/`](extension/) that brings the same gesture to every site, with **Gemini Nano** answering questions on-device (or your own API key as a fallback). See [`extension/README.md`](extension/README.md) for load instructions.
-
-## The payload
-
-Every picked element is captured as:
+Every picked element fires `wiggle:ask` with this payload:
 
 - `text` / `html` — innerText + outerHTML (capped)
 - `aria` — all `aria-*` attrs, plus `role`, `id`, `title`
@@ -30,8 +36,6 @@ Every picked element is captured as:
 - `link` — `{ href, text }` if it's or sits inside an `<a>`
 - `value` — for `<input>` / `<textarea>` / `<select>`
 - `rect` + `selector` — bounding rect and a stable CSS path
-
-## Events
 
 ```js
 // Fires when the user clicks "Ask AI"
@@ -48,25 +52,25 @@ document.addEventListener('wiggle:ask', e => {
 
 ## Tuning the gesture
 
-Defaults live in the `opts` block at the top of the script:
+Defaults live in the `opts` block at the top of each script:
 
 ```js
 {
-  windowMs: 600,      // sliding-window length
-  minReversals: 4,    // direction flips required inside the window
-  maxRadius: 220,     // gesture must stay inside this bounding box (px)
-  minSpeedPxMs: 0.25, // average cursor speed (px/ms)
-  cooldownMs: 1200,   // ignore further triggers right after one fires
+  windowMs: 600,       // sliding-window length
+  minReversals: 4,     // direction flips required inside the window
+  maxRadius: 220,      // gesture must stay inside this bounding box (px)
+  minSpeedPxMs: 0.25,  // average cursor speed (px/ms)
+  minSamples: 5,       // minimum samples before evaluating
+  cooldownMs: 1200,    // ignore further triggers right after one fires
 }
 ```
 
-Wiggle to enter selection mode, wiggle (or Esc) to leave.
+Wiggle to enter selection mode, wiggle (or <kbd>Esc</kbd>) to leave. Press <kbd>Enter</kbd> after picking to commit.
 
 ## Topics
 
-`gesture` · `mouse-gesture` · `ai` · `cursor` · `javascript` · `wiggle-gesture` · `google-io`
+`chrome-extension` · `gemini-nano` · `on-device-ai` · `manifest-v3` · `prompt-api` · `gesture` · `mouse-gesture` · `wiggle-gesture` · `ai` · `cursor` · `javascript` · `google-io` · `llm` · `browser-extension`
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
