@@ -440,7 +440,10 @@
       console.error('[wiggle-magic] askAI failed:', err);
       const errSpan = document.createElement('span');
       errSpan.className = 'err';
-      errSpan.textContent = err?.message || String(err);
+      const msg = err?.message || String(err);
+      errSpan.textContent = /Extension context invalidated/i.test(msg)
+        ? 'Wiggle Magic was updated. Reload this tab to continue.'
+        : msg;
       answerEl.replaceChildren(errSpan);
     } finally {
       answerEl.classList.remove('streaming');
