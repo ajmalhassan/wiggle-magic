@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Wiggle Magic</title>
+<link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">
+      <svg viewBox="-3 -3 6 6" width="14" height="14" aria-hidden="true">
+        <polygon points="0,-2.6 0.7,-0.7 2.6,0 0.7,0.7 0,2.6 -0.7,0.7 -2.6,0 -0.7,-0.7" fill="#0b0d12"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Wiggle Magic</h1>
+      <p class="sub" id="sub">memory</p>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="icon" id="settings" title="Settings" aria-label="Settings">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+        <path fill="currentColor" d="M19.43 12.98a7.99 7.99 0 0 0 0-1.96l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.61-.22l-2.49 1a8.06 8.06 0 0 0-1.7-.99l-.38-2.65a.5.5 0 0 0-.5-.41h-4a.5.5 0 0 0-.5.41l-.38 2.65a8.06 8.06 0 0 0-1.7.99l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46a.5.5 0 0 0 .12.64l2.11 1.65a7.99 7.99 0 0 0 0 1.96L2.42 14.63a.5.5 0 0 0-.12.64l2 3.46c.14.24.43.34.69.22l2.49-1c.52.4 1.09.73 1.7.99l.38 2.65a.5.5 0 0 0 .5.41h4a.5.5 0 0 0 .5-.41l.38-2.65c.61-.26 1.18-.59 1.7-.99l2.49 1c.26.12.55.02.69-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.13-1.65zM12 15.5A3.5 3.5 0 1 1 15.5 12 3.5 3.5 0 0 1 12 15.5z"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<main id="list" class="list"></main>
+
+<template id="row-tpl">
+  <article class="row">
+    <header class="row-head">
+      <div class="meta">
+        <span class="host"></span>
+        <span class="when"></span>
+      </div>
+      <button class="icon del" title="Delete" aria-label="Delete entry">
+        <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+          <path fill="currentColor" d="M6 2h4l1 1h3v2H2V3h3l1-1zm-2 4h8l-1 9H5L4 6z"/>
+        </svg>
+      </button>
+    </header>
+    <div class="q"></div>
+    <div class="a"></div>
+    <details class="src">
+      <summary><span class="src-count"></span> selected</summary>
+      <ul class="src-list"></ul>
+    </details>
+  </article>
+</template>
+
+<div class="empty" id="empty" hidden>
+  <div class="empty-icon">
+    <svg viewBox="-3 -3 6 6" width="22" height="22" aria-hidden="true">
+      <polygon points="0,-2.6 0.7,-0.7 2.6,0 0.7,0.7 0,2.6 -0.7,0.7 -2.6,0 -0.7,-0.7" fill="url(#g)"/>
+      <defs>
+        <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stop-color="#7df9ff"/>
+          <stop offset="0.5" stop-color="#b07cff"/>
+          <stop offset="1" stop-color="#ff7ad9"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+  <p class="empty-title">Nothing saved yet</p>
+  <p class="empty-sub">Wiggle your cursor on any page, pick elements, ask AI, then hit <b>Save</b> on an answer to keep it here.</p>
+</div>
+
+<footer>
+  <button class="link" id="export">Export all</button>
+  <button class="link danger" id="clear" hidden>Clear all</button>
+</footer>
+
+<script src="popup.js"></script>
+</body>
+</html>

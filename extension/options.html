@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Wiggle Magic — Settings</title>
+<style>
+  :root { --bg: #0b0d12; --fg: #e7ecf3; --muted: #8a93a6; --line: #222838; --accent-a: #7df9ff; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg);
+    font: 14px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif; }
+  .wrap { max-width: 600px; margin: 0 auto; padding: 48px 28px 80px; }
+  h1 { margin: 0 0 6px; font-size: 26px; letter-spacing: -0.02em; }
+  .sub { color: var(--muted); margin: 0 0 32px; font-size: 14px; }
+  section { margin-top: 28px; }
+  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 600; margin: 0 0 12px; }
+  .field { margin: 0 0 14px; }
+  label { display: block; font-size: 13px; margin-bottom: 6px; color: #d6dbe6; }
+  label .hint { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 8px; }
+  select, input[type="text"], input[type="password"] {
+    width: 100%;
+    background: #141823;
+    color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font: inherit;
+    outline: none;
+  }
+  select:focus, input:focus { border-color: rgba(125,249,255,0.55); box-shadow: 0 0 0 3px rgba(125,249,255,0.12); }
+  .row { display: flex; gap: 10px; align-items: center; margin-top: 18px; }
+  button {
+    appearance: none; border: 0;
+    background: linear-gradient(90deg, #7df9ff, #b07cff, #ff7ad9, #ffd57a, #7df9ff);
+    background-size: 300% 100%;
+    color: #0b0d12;
+    font: 600 13px inherit;
+    padding: 10px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  button:hover { filter: brightness(1.07); }
+  .saved { color: var(--accent-a); font-size: 13px; opacity: 0; transition: opacity 200ms ease; }
+  .saved.show { opacity: 1; }
+  .note {
+    margin: 18px 0 0;
+    padding: 12px 14px;
+    background: rgba(125, 249, 255, 0.04);
+    border: 1px solid rgba(125, 249, 255, 0.18);
+    border-radius: 10px;
+    font-size: 12.5px;
+    color: #d6dbe6;
+  }
+  .note b { color: var(--accent-a); }
+  .nano-status { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .nano-status.ok { color: var(--accent-a); }
+  .nano-status.bad { color: #ff9ec7; }
+  code { background: #0e1219; border: 1px solid var(--line); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Wiggle Magic</h1>
+  <p class="sub">Configure how Ask AI gets its answers.</p>
+
+  <section>
+    <h2>AI backend</h2>
+    <div class="field">
+      <label for="backend">Strategy</label>
+      <select id="backend">
+        <option value="auto">Auto — Gemini Nano first, BYOK as fallback (recommended)</option>
+        <option value="nano">Gemini Nano only (on-device, Chrome 138+)</option>
+        <option value="byok">BYOK only (uses your API key)</option>
+      </select>
+      <p class="nano-status" id="nano-status">Checking Gemini Nano availability…</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Bring your own key</h2>
+    <div class="field">
+      <label for="provider">Provider</label>
+      <select id="provider">
+        <option value="openai">OpenAI</option>
+        <option value="anthropic">Anthropic</option>
+        <option value="gemini">Google Gemini</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="apiKey">API key <span class="hint">stored locally on this device only</span></label>
+      <input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-…" />
+    </div>
+    <div class="field">
+      <label for="model">Model <span class="hint" id="modelHint">defaults to gpt-4o-mini</span></label>
+      <input id="model" type="text" placeholder="(leave blank for default)" />
+    </div>
+
+    <div class="note">
+      <b>Privacy:</b> when using Gemini Nano, your selection and question never leave the device.
+      With BYOK, the prompt is sent directly from your browser to the provider you chose — Wiggle Magic has no server.
+    </div>
+  </section>
+
+  <div class="row">
+    <button id="save">Save</button>
+    <span class="saved" id="saved">Saved ✓</span>
+  </div>
+</div>
+<script src="options.js"></script>
+</body>
+</html>

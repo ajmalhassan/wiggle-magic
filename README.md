@@ -15,6 +15,10 @@ python3 -m http.server 8765
 
 No build step, no dependencies — `index.html` + `cursor.svg`.
 
+## Or use it on any page (Chrome extension)
+
+A Manifest V3 extension lives in [`extension/`](extension/) that brings the same gesture to every site, with **Gemini Nano** answering questions on-device (or your own API key as a fallback). See [`extension/README.md`](extension/README.md) for load instructions.
+
 ## The payload
 
 Every picked element is captured as:

@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Wiggle Magic",
+  "version": "0.1.0",
+  "description": "Wiggle your cursor on any page to ask AI about what you see. Powered by Gemini Nano (on-device) with optional BYOK fallback.",
+  "minimum_chrome_version": "138",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Wiggle Magic — saved answers"
+  },
+  "options_page": "options.html",
+  "web_accessible_resources": [
+    {
+      "resources": ["cursor.svg"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
