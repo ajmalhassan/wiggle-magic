@@ -6,11 +6,15 @@ const modelHint  = document.getElementById('modelHint');
 const saveBtn    = document.getElementById('save');
 const savedMsg   = document.getElementById('saved');
 const nanoStatus = document.getElementById('nano-status');
+const dlBtn      = document.getElementById('nano-download');
+const dlProgress = document.getElementById('dl-progress');
+const dlBarFill  = document.getElementById('dl-bar-fill');
+const dlPct      = document.getElementById('dl-pct');
 
 const DEFAULT_MODELS = {
-  openai:    'gpt-4o-mini',
-  anthropic: 'claude-haiku-4-5-20251001',
-  gemini:    'gemini-2.0-flash',
+  openai:    'gpt-5.4-mini',
+  anthropic: 'claude-haiku-4-5',
+  gemini:    'gemini-2.5-flash',
 };
 
 function updateHint() {
@@ -29,6 +33,10 @@ async function load() {
 }
 
 async function checkNano() {
+  nanoStatus.classList.remove('ok', 'bad');
+  dlBtn.hidden = true;
+  dlProgress.hidden = true;
+
   if (typeof LanguageModel === 'undefined') {
     nanoStatus.textContent = '⚠ Gemini Nano API not detected (needs Chrome 138+ on supported hardware).';
     nanoStatus.classList.add('bad');
@@ -39,8 +47,11 @@ async function checkNano() {
     if (avail === 'available' || avail === 'readily') {
       nanoStatus.textContent = '✓ Gemini Nano is available on this device.';
       nanoStatus.classList.add('ok');
-    } else if (avail === 'after-download' || avail === 'downloading') {
-      nanoStatus.textContent = `Gemini Nano model status: ${avail}. It will be ready after the browser finishes downloading it.`;
+    } else if (avail === 'downloadable') {
+      nanoStatus.textContent = 'Gemini Nano is supported, but the on-device model (~2 GB) hasn\'t been downloaded yet.';
+      dlBtn.hidden = false;
+    } else if (avail === 'downloading' || avail === 'after-download') {
+      nanoStatus.textContent = 'Gemini Nano is downloading in the background. This can take a few minutes; reload this page to recheck.';
     } else {
       nanoStatus.textContent = `Gemini Nano is unavailable on this device (status: ${avail}). BYOK fallback will be used.`;
       nanoStatus.classList.add('bad');
@@ -50,6 +61,34 @@ async function checkNano() {
     nanoStatus.classList.add('bad');
   }
 }
+
+dlBtn.addEventListener('click', async () => {
+  dlBtn.hidden = true;
+  dlProgress.hidden = false;
+  nanoStatus.classList.remove('ok', 'bad');
+  nanoStatus.textContent = 'Starting download…';
+  try {
+    const session = await LanguageModel.create({
+      monitor(m) {
+        m.addEventListener('downloadprogress', (e) => {
+          // e.loaded is a 0–1 fraction.
+          const pct = Math.round((e.loaded ?? 0) * 100);
+          dlBarFill.style.width = pct + '%';
+          dlPct.textContent = pct + '%';
+          nanoStatus.textContent = `Downloading Gemini Nano… ${pct}%`;
+        });
+      },
+    });
+    try { session.destroy?.(); } catch {}
+    dlProgress.hidden = true;
+    await checkNano();
+  } catch (err) {
+    dlProgress.hidden = true;
+    dlBtn.hidden = false;
+    nanoStatus.textContent = `Download failed: ${err.message}. Try the manual steps below, or use a BYOK key.`;
+    nanoStatus.classList.add('bad');
+  }
+});
 
 saveBtn.addEventListener('click', async () => {
   const wm_settings = {

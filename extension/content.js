@@ -479,10 +479,10 @@
       }
       // Nano not ready and user hasn't set BYOK — surface a useful error.
       if (settings.backend === 'nano') {
-        throw new Error('Gemini Nano is not available in this browser. Open the extension options to set up a BYOK key, or enable on-device AI in Chrome (chrome://flags/#prompt-api-for-gemini-nano).');
+        throw new Error(`Gemini Nano isn't ready (status: ${avail}). Open the extension Options to download the model or switch to BYOK.`);
       }
       if (!settings.apiKey) {
-        throw new Error('Gemini Nano is not available, and no API key is set. Click the extension icon → Settings to paste an API key.');
+        throw new Error(`Gemini Nano isn't ready (status: ${avail}) and no API key is set. Open the extension Options to download Nano or paste a BYOK key.`);
       }
     }
 
@@ -541,7 +541,7 @@
       url: 'https://api.openai.com/v1/chat/completions',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${s.apiKey}` },
       body: {
-        model: s.model || 'gpt-4o-mini',
+        model: s.model || 'gpt-5.4-mini',
         stream: true,
         messages: [
           { role: 'system', content: sys },
@@ -560,7 +560,7 @@
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: {
-        model: s.model || 'claude-haiku-4-5-20251001',
+        model: s.model || 'claude-haiku-4-5',
         max_tokens: 1024,
         stream: true,
         system: sys,
@@ -569,7 +569,7 @@
       extract: (j) => j.type === 'content_block_delta' ? j.delta?.text : null,
     };
     if (provider === 'gemini') {
-      const u = new URL(`https://generativelanguage.googleapis.com/v1beta/models/${s.model || 'gemini-2.0-flash'}:streamGenerateContent`);
+      const u = new URL(`https://generativelanguage.googleapis.com/v1beta/models/${s.model || 'gemini-2.5-flash'}:streamGenerateContent`);
       u.searchParams.set('alt', 'sse');
       u.searchParams.set('key', s.apiKey);
       return {
