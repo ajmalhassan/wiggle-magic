@@ -12,12 +12,13 @@
     "postinstall": "wxt prepare"
   },
   "dependencies": {
-    "marked": "^14.1.0",
-    "dompurify": "^3.1.0"
+    "dompurify": "^3.1.0",
+    "marked": "^14.1.0"
   },
   "devDependencies": {
-    "wxt": "^0.20.0",
+    "@types/chrome": "^0.1.42",
+    "@types/dompurify": "^3.0.5",
     "typescript": "^5.6.0",
-    "@types/dompurify": "^3.0.5"
+    "wxt": "^0.20.0"
   }
 }
