@@ -40,6 +40,7 @@ header {
   width: 28px; height: 28px;
   display: inline-flex; align-items: center; justify-content: center;
   border-radius: 6px;
+  text-decoration: none;
 }
 .icon:hover { color: var(--fg); background: rgba(255,255,255,0.04); }
 

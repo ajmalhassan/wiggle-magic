@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Wiggle Magic — Help</title>
+<style>
+  :root { --bg: #0b0d12; --fg: #e7ecf3; --muted: #8a93a6; --line: #222838; --accent-a: #7df9ff; --accent-b: #b07cff; --accent-c: #ff7ad9; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg);
+    font: 14px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif; }
+  a { color: var(--accent-a); }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 48px 28px 96px; }
+  .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 36px; }
+  h1 { margin: 0 0 6px; font-size: 28px; letter-spacing: -0.02em; }
+  .sub { color: var(--muted); margin: 0; font-size: 14px; }
+  .back { color: var(--muted); text-decoration: none; font-size: 13px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); }
+  .back:hover { color: var(--fg); border-color: rgba(125,249,255,0.3); }
+  section { margin-top: 36px; }
+  h2 { margin: 0 0 14px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+  h3 { margin: 18px 0 6px; font-size: 15px; }
+  p, li { color: #d6dbe6; }
+  ul { margin: 6px 0 14px; padding-left: 22px; }
+  ul li { margin: 4px 0; }
+  kbd {
+    background: rgba(125,249,255,0.08);
+    border: 1px solid rgba(125,249,255,0.18);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 0 6px;
+    font: 600 12px ui-monospace, Menlo, monospace;
+    color: #e7ecf3;
+  }
+  code {
+    background: #0e1219; border: 1px solid var(--line);
+    padding: 1px 6px; border-radius: 4px;
+    font-family: ui-monospace, Menlo, monospace; font-size: 12.5px;
+  }
+  .card {
+    background: #141823;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .shortcuts {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 8px 20px;
+    margin: 0;
+  }
+  .shortcuts dt { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; color: var(--accent-a); }
+  .shortcuts dd { margin: 0; color: #d6dbe6; }
+  details {
+    margin: 8px 0;
+    padding: 10px 14px;
+    background: rgba(125,249,255,0.025);
+    border: 1px solid rgba(125,249,255,0.10);
+    border-radius: 8px;
+  }
+  summary { cursor: pointer; font-weight: 600; color: #e7ecf3; }
+  details[open] summary { margin-bottom: 8px; }
+  details p, details li { font-size: 13px; line-height: 1.6; }
+  .links li { padding: 2px 0; }
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(125, 249, 255, 0.08);
+    border: 1px solid rgba(125, 249, 255, 0.22);
+    border-radius: 999px;
+    color: var(--accent-a);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .priv-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  }
+  .priv-grid .card h3 { margin-top: 0; }
+  @media (max-width: 600px) {
+    .priv-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="page-head">
+    <div>
+      <h1>Help</h1>
+      <p class="sub">Everything you can do with Wiggle Magic, in 30 seconds.</p>
+    </div>
+    <a class="back" href="options.html">← Settings</a>
+  </div>
+
+  <section>
+    <h2>The gesture</h2>
+    <p>Briskly shake the cursor side-to-side anywhere on a page. The cursor swaps to a glowing pointer, the viewport edges light up — you're in selection mode. Click to pick elements; click again to deselect. Move onto the floating <b>Magic</b> pill (or press <kbd>Enter</kbd>) to commit.</p>
+    <p><span class="pill">Tip</span> The gesture needs at least 4 direction reversals within ~600 ms, in a small bounding box, at average speed ≥ 0.25 px/ms. Loose enough to be deliberate, strict enough not to fire on normal mouse paths.</p>
+  </section>
+
+  <section>
+    <h2>Keyboard shortcuts</h2>
+    <div class="card">
+      <dl class="shortcuts">
+        <dt><kbd>Enter</kbd></dt><dd>Commit your selection and open Magic</dd>
+        <dt><kbd>Esc</kbd></dt><dd>Cancel — clears selection and exits</dd>
+        <dt>wiggle again</dt><dd>Toggle selection mode off</dd>
+        <dt><kbd>Enter</kbd> in chat</dt><dd>Send your question</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section>
+    <h2>Where your data goes</h2>
+    <div class="priv-grid">
+      <div class="card">
+        <h3>Gemini Nano</h3>
+        <p>Runs entirely on your machine. Selections and questions never leave the device. Model weights are downloaded once by Chrome itself and cached system-wide.</p>
+      </div>
+      <div class="card">
+        <h3>Bring your own key</h3>
+        <p>Prompts go directly from your browser to the provider you chose (OpenAI / Anthropic / Gemini). There is no Wiggle Magic server. Your key lives in <code>chrome.storage.sync</code> on this device.</p>
+      </div>
+    </div>
+    <p style="font-size: 12.5px; color: var(--muted); margin-top: 12px;">Saved answers live in <code>chrome.storage.local</code> on this device. Export them as Markdown anytime from the toolbar popup.</p>
+  </section>
+
+  <section>
+    <h2>Troubleshooting</h2>
+
+    <details>
+      <summary>"Gemini Nano is unavailable on this device"</summary>
+      <p>Open <a href="options.html">Settings</a> — if you see a <b>Download model (~2 GB)</b> button, click it and wait. If not:</p>
+      <ul>
+        <li>Confirm Chrome ≥ 138 (<code>chrome://settings/help</code>)</li>
+        <li>Enable <code>chrome://flags/#prompt-api-for-gemini-nano</code></li>
+        <li>Enable <code>chrome://flags/#optimization-guide-on-device-model</code> as <b>Enabled BypassPerfRequirement</b></li>
+        <li>Relaunch Chrome</li>
+        <li>Open <code>chrome://components/</code>, find <b>Optimization Guide On Device Model</b>, click <b>Check for update</b></li>
+      </ul>
+      <p>Full reference: <a href="https://developer.chrome.com/docs/ai/prompt-api" target="_blank" rel="noopener noreferrer">Chrome built-in AI / Prompt API docs</a>.</p>
+    </details>
+
+    <details>
+      <summary>Wiggle doesn't fire on a specific site</summary>
+      <ul>
+        <li>The extension doesn't run on <code>chrome://</code> pages, the Chrome Web Store, the New Tab page, or the PDF viewer.</li>
+        <li>It runs in the top frame only, so iframes (Stripe checkouts, embedded videos) won't trigger.</li>
+        <li>Some sites (Figma, Notion, Google Docs) own the cursor — the gesture should still fire but the cursor swap may look off.</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>BYOK call failed</summary>
+      <ul>
+        <li>Make sure the key matches the provider you selected (OpenAI key won't work against Anthropic).</li>
+        <li>Anthropic requires the <code>anthropic-dangerous-direct-browser-access</code> header — the extension sets it, but the org policy on your key may still block browser calls. Try a key from a different account.</li>
+        <li>Rate-limited keys silently return an empty stream. Check your provider's usage dashboard.</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>Saved answers aren't appearing</summary>
+      <ul>
+        <li>Save only triggers from the <b>Save</b> button on a successful answer — not automatically.</li>
+        <li>The cap is 500 entries; older ones drop off the bottom. Export to Markdown to keep them long-term.</li>
+        <li>Browsers in incognito don't have access to your normal <code>chrome.storage.local</code> — that's by design.</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>The cursor looks wrong on this site</summary>
+      <p>Some sites set a custom CSS cursor at high specificity. We override it with <code>cursor: none !important</code> on <code>body.wm-active *</code>, but if the site uses an inline style on a specific element, it can still bleed through. Wiggle still works either way — the AI flow is independent of the cursor look. File an issue with the site URL and we'll add a workaround.</p>
+    </details>
+  </section>
+
+  <section>
+    <h2>Tunable thresholds</h2>
+    <p>The gesture detector lives in <code>content.js</code> with a small <code>opts</code> object you can tweak if you fork:</p>
+    <ul>
+      <li><code>windowMs: 600</code> — sliding-window length</li>
+      <li><code>minReversals: 4</code> — direction flips required</li>
+      <li><code>maxRadius: 220</code> — gesture confinement (px)</li>
+      <li><code>minSpeedPxMs: 0.25</code> — avg pointer speed</li>
+      <li><code>minSamples: 5</code> — minimum samples before evaluating</li>
+      <li><code>cooldownMs: 1200</code> — quiet period after a trigger</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Links</h2>
+    <ul class="links">
+      <li><a href="https://github.com/ajmalhassan/wiggle-magic" target="_blank" rel="noopener noreferrer">GitHub repo</a> — file an issue, suggest improvements, send a PR</li>
+      <li><a href="https://ajmalhassan.github.io/wiggle-magic/" target="_blank" rel="noopener noreferrer">Live demo</a> — just the gesture, no extension needed</li>
+      <li><a href="https://developer.chrome.com/docs/ai/prompt-api" target="_blank" rel="noopener noreferrer">Chrome Prompt API docs</a></li>
+      <li><a href="options.html">Settings</a></li>
+    </ul>
+  </section>
+
+</div>
+</body>
+</html>

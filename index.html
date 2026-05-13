@@ -558,7 +558,7 @@
 <div class="wrap">
   <header>
     <h1>Wiggle &rarr; Magic</h1>
-    <p>Wiggle the cursor briskly to enter selection mode. Click any elements to pick them — pick as many as you want, click again to deselect. Then move onto the floating <b>Ask AI</b> popover to commit. Wiggle again or press <code class="kbd">Esc</code> to cancel.</p>
+    <p>Wiggle the cursor briskly to enter selection mode. Click any elements to pick them — pick as many as you want, click again to deselect. Then move onto the floating <b>Magic</b> popover to commit. Wiggle again or press <code class="kbd">Esc</code> to cancel.</p>
     <span class="hint">try it: <b>wiggle your cursor</b> &nbsp;·&nbsp; this is the only gesture</span>
   </header>
 
@@ -791,13 +791,13 @@
       <svg class="sparkle" viewBox="-3 -3 6 6" aria-hidden="true">
         <polygon points="0,-2.6 0.7,-0.7 2.6,0 0.7,0.7 0,2.6 -0.7,0.7 -2.6,0 -0.7,-0.7" fill="#0b0d12"/>
       </svg>
-      <span>Ask AI</span>
+      <span>Magic</span>
       <span class="kbd" aria-label="press Enter to commit">⏎</span>
       <span class="count" aria-label="selected items">0</span>
     </button>
   </div>
 </div>
-<div id="wm-sheet" role="dialog" aria-label="Ask AI">
+<div id="wm-sheet" role="dialog" aria-label="Magic">
   <div class="pill-state">
     <span class="dot"></span>
     <span>Preparing your context…</span>
@@ -805,12 +805,12 @@
   <div class="sheet-state">
     <button class="close" id="wm-sheet-close" type="button" aria-label="Close">×</button>
     <div class="header">
-      <b>Ask AI</b>
+      <b>Magic</b>
       <span id="wm-sheet-count"></span>
     </div>
     <div class="chips" id="wm-sheet-chips"></div>
     <div class="ask">
-      <input id="wm-sheet-input" type="text" placeholder="Ask anything about your selection…" autocomplete="off" />
+      <input id="wm-sheet-input" type="text" placeholder="Ask Magic about your selection…" autocomplete="off" />
       <button id="wm-sheet-send" type="button">
         <svg class="sparkle" viewBox="-3 -3 6 6" aria-hidden="true">
           <polygon points="0,-2.6 0.7,-0.7 2.6,0 0.7,0.7 0,2.6 -0.7,0.7 -2.6,0 -0.7,-0.7" fill="#0b0d12"/>
@@ -919,7 +919,7 @@
     state = 'activating';
     document.body.classList.add('wm-active');
     spawnBurst(x, y);
-    status.textContent = 'click to pick · Ask AI to commit · wiggle/Esc to cancel';
+    status.textContent = 'click to pick · Magic to commit · wiggle/Esc to cancel';
 
     // Position cursor immediately so it materializes at the wiggle point.
     paintCursor(x, y);
@@ -1175,7 +1175,7 @@
     const extra = payloads.length > 3 ? ` + ${payloads.length - 3} more` : '';
     const header = question
       ? `<b>Asked</b> “${escapeHtml(question.slice(0, 80))}${question.length > 80 ? '…' : ''}” · ${payloads.length} item${payloads.length > 1 ? 's' : ''}`
-      : `<b>Ask AI</b> · ${payloads.length} item${payloads.length > 1 ? 's' : ''}`;
+      : `<b>Magic</b> · ${payloads.length} item${payloads.length > 1 ? 's' : ''}`;
     toast.innerHTML = `${header}<br><span class="sel">${escapeHtml(parts + extra)}</span>`;
     toast.classList.add('show');
     clearTimeout(showCommitToast._t);

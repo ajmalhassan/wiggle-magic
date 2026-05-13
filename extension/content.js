@@ -29,13 +29,13 @@
           <svg class="sparkle" viewBox="-3 -3 6 6" aria-hidden="true">
             <polygon points="0,-2.6 0.7,-0.7 2.6,0 0.7,0.7 0,2.6 -0.7,0.7 -2.6,0 -0.7,-0.7" fill="#0b0d12"/>
           </svg>
-          <span>Ask AI</span>
+          <span>Magic</span>
           <span class="kbd" aria-label="press Enter to commit">⏎</span>
           <span class="count" aria-label="selected items">0</span>
         </button>
       </div>
     </div>
-    <div id="wm-sheet" role="dialog" aria-label="Ask AI">
+    <div id="wm-sheet" role="dialog" aria-label="Magic">
       <div class="pill-state">
         <span class="dot"></span>
         <span>Preparing your context…</span>
@@ -43,7 +43,7 @@
       <div class="sheet-state">
         <button class="close" id="wm-sheet-close" type="button" aria-label="Close">×</button>
         <div class="header">
-          <b>Ask AI</b>
+          <b>Magic</b>
           <span id="wm-sheet-count"></span>
         </div>
         <div class="chips" id="wm-sheet-chips"></div>
@@ -64,7 +64,7 @@
           <span class="saved" id="wm-saved-msg" style="display:none">saved ✓</span>
         </div>
         <div class="ask">
-          <input id="wm-sheet-input" type="text" placeholder="Ask anything about your selection…" autocomplete="off" />
+          <input id="wm-sheet-input" type="text" placeholder="Ask Magic about your selection…" autocomplete="off" />
           <button id="wm-sheet-send" type="button">
             <svg class="sparkle" viewBox="-3 -3 6 6" aria-hidden="true">
               <polygon points="0,-2.6 0.7,-0.7 2.6,0 0.7,0.7 0,2.6 -0.7,0.7 -2.6,0 -0.7,-0.7" fill="#0b0d12"/>

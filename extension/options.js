@@ -10,6 +10,9 @@ const dlBtn      = document.getElementById('nano-download');
 const dlProgress = document.getElementById('dl-progress');
 const dlBarFill  = document.getElementById('dl-bar-fill');
 const dlPct      = document.getElementById('dl-pct');
+const welcomeEl   = document.getElementById('welcome');
+const welcomeGo   = document.getElementById('welcome-go');
+const welcomeSkip = document.getElementById('welcome-skip');
 
 const DEFAULT_MODELS = {
   openai:    'gpt-5.4-mini',
@@ -23,14 +26,25 @@ function updateHint() {
 providerEl.addEventListener('change', updateHint);
 
 async function load() {
-  const { wm_settings = {} } = await chrome.storage.sync.get('wm_settings');
+  const { wm_settings = {}, wm_welcomed } = await chrome.storage.sync.get(['wm_settings', 'wm_welcomed']);
   backendEl.value  = wm_settings.backend  || 'auto';
   providerEl.value = wm_settings.provider || 'openai';
   keyEl.value      = wm_settings.apiKey   || '';
   modelEl.value    = wm_settings.model    || '';
   updateHint();
   checkNano();
+  if (!wm_welcomed) welcomeEl.hidden = false;
 }
+
+function dismissWelcome() {
+  welcomeEl.hidden = true;
+  chrome.storage.sync.set({ wm_welcomed: true });
+}
+welcomeGo.addEventListener('click', () => {
+  dismissWelcome();
+  document.querySelector('section:not(.welcome)').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+welcomeSkip.addEventListener('click', dismissWelcome);
 
 async function checkNano() {
   nanoStatus.classList.remove('ok', 'bad');

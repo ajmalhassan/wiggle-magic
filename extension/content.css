@@ -259,6 +259,7 @@ body.wm-active #wm-edge { opacity: 1; }
   display: flex; align-items: center; justify-content: space-between;
   font-size: 12px; color: #8a93a6;
   font-variant-numeric: tabular-nums;
+  padding-right: 28px; /* clear space for the absolute-positioned close button */
 }
 #wm-sheet .sheet-state .header b { color: #e7ecf3; font-weight: 600; font-size: 13px; }
 #wm-sheet .chips {

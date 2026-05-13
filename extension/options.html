@@ -115,12 +115,136 @@
   .nano-help ol { margin: 0; padding-left: 20px; }
   .nano-help li { margin: 4px 0; }
   .nano-help a { color: var(--accent-a); }
+
+  /* First-run welcome banner */
+  .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+  .help-link {
+    color: var(--muted); text-decoration: none; font-size: 13px;
+    padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+  .help-link:hover { color: var(--fg); border-color: rgba(125,249,255,0.3); }
+  .welcome {
+    margin: 0 0 32px;
+    padding: 26px 26px 22px;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(125,249,255,0.10), transparent 50%),
+      radial-gradient(circle at 100% 100%, rgba(255,122,217,0.07), transparent 50%),
+      #141823;
+    border: 1px solid rgba(125,249,255,0.20);
+    border-radius: 16px;
+    box-shadow: 0 0 60px rgba(125,249,255,0.06), 0 0 90px rgba(176,124,255,0.04);
+  }
+  .welcome-spark {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: rgba(11,13,18,0.5);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 12px;
+    box-shadow: 0 0 14px rgba(176,124,255,0.3);
+  }
+  .welcome h2 { margin: 0 0 6px; font-size: 20px; letter-spacing: -0.01em; text-transform: none; color: var(--fg); font-weight: 700; }
+  .welcome > p { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
+  .welcome-steps {
+    list-style: none; padding: 0; margin: 0 0 16px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  }
+  .welcome-steps li {
+    background: rgba(125,249,255,0.025);
+    border: 1px solid rgba(125,249,255,0.10);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .welcome-steps .step-n {
+    display: inline-block;
+    font-size: 11px; font-weight: 700;
+    color: #0b0d12;
+    background: linear-gradient(90deg, #7df9ff, #b07cff);
+    padding: 2px 8px; border-radius: 999px;
+    margin-bottom: 8px;
+  }
+  .welcome-steps h3 { margin: 0 0 4px; font-size: 13.5px; font-weight: 600; }
+  .welcome-steps p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+  .welcome-steps kbd {
+    background: rgba(125,249,255,0.08);
+    border: 1px solid rgba(125,249,255,0.18);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 0 5px;
+    font: 600 11px ui-monospace, Menlo, monospace;
+    color: #d6dbe6;
+  }
+  .welcome-priv {
+    margin: 0 0 16px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+    padding: 10px 12px;
+    background: rgba(11,13,18,0.4);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+  .welcome-priv b { color: var(--accent-a); }
+  .welcome-actions { display: flex; align-items: center; gap: 6px; }
+  .welcome-skip {
+    background: transparent; border: 0;
+    color: var(--muted); font: inherit;
+    cursor: pointer; padding: 8px 10px; border-radius: 6px;
+  }
+  .welcome-skip:hover { color: var(--fg); }
+  @media (max-width: 560px) {
+    .welcome-steps { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Wiggle Magic</h1>
-  <p class="sub">Configure how Ask AI gets its answers.</p>
+  <div class="page-head">
+    <div>
+      <h1>Wiggle Magic</h1>
+      <p class="sub">Configure how Magic gets its answers.</p>
+    </div>
+    <a class="help-link" href="help.html" target="_blank" rel="noopener">Help →</a>
+  </div>
+
+  <section class="welcome" id="welcome" hidden>
+    <div class="welcome-spark">
+      <svg viewBox="-3 -3 6 6" width="22" height="22" aria-hidden="true">
+        <defs>
+          <linearGradient id="wg-spark" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0" stop-color="#7df9ff"/>
+            <stop offset="0.5" stop-color="#b07cff"/>
+            <stop offset="1" stop-color="#ff7ad9"/>
+          </linearGradient>
+        </defs>
+        <polygon points="0,-2.6 0.7,-0.7 2.6,0 0.7,0.7 0,2.6 -0.7,0.7 -2.6,0 -0.7,-0.7" fill="url(#wg-spark)"/>
+      </svg>
+    </div>
+    <h2>Welcome to Wiggle Magic</h2>
+    <p>Turn any web page into an AI selection canvas with a flick of the cursor.</p>
+    <ol class="welcome-steps">
+      <li>
+        <span class="step-n">1</span>
+        <h3>Wiggle</h3>
+        <p>Briskly shake your cursor anywhere on a page to enter selection mode.</p>
+      </li>
+      <li>
+        <span class="step-n">2</span>
+        <h3>Pick</h3>
+        <p>Click any element — text, image, code, table cell — to add it. Click again to remove.</p>
+      </li>
+      <li>
+        <span class="step-n">3</span>
+        <h3>Magic</h3>
+        <p>Click the floating Magic pill (or press <kbd>Enter</kbd>) to ask Gemini Nano about your selection.</p>
+      </li>
+    </ol>
+    <p class="welcome-priv"><b>Privacy:</b> Gemini Nano runs entirely on your machine. With BYOK, prompts go directly from your browser to the provider — Wiggle Magic has no server.</p>
+    <div class="welcome-actions">
+      <button id="welcome-go" type="button">Got it — set me up</button>
+      <button id="welcome-skip" class="welcome-skip" type="button">Skip</button>
+    </div>
+  </section>
 
   <section>
     <h2>AI backend</h2>

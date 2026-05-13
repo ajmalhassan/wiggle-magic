@@ -1,6 +1,6 @@
 # Wiggle Magic — Chrome extension
 
-Wiggle your cursor on any web page → enter selection mode → pick one or more elements → **Ask AI**. Answers come from **Gemini Nano** on-device when available, or your own API key (OpenAI / Anthropic / Gemini) as a fallback. Save useful answers; everything stays local.
+Wiggle your cursor on any web page → enter selection mode → pick one or more elements → tap **Magic**. Answers come from **Gemini Nano** on-device when available, or your own API key (OpenAI / Anthropic / Gemini) as a fallback. Save useful answers; everything stays local.
 
 ## Load it (dev)
 
@@ -14,7 +14,7 @@ Wiggle your cursor on any web page → enter selection mode → pick one or more
 
 - **Wiggle** your cursor briskly anywhere on any page → the cursor swaps to a glowing pointer, viewport edges light up
 - **Click** elements to pick them (click again to deselect)
-- Move onto the floating **Ask AI** pill → click (or press <kbd>Enter</kbd>)
+- Move onto the floating **Magic** pill → click (or press <kbd>Enter</kbd>)
 - A chat sheet rises from the bottom. Type your question, hit Send. Answer streams in and renders as markdown (lists, code blocks, tables, links).
 - Click **Save** to keep the answer — it shows up when you click the toolbar icon.
 - **Wiggle again** or press <kbd>Esc</kbd> to exit at any time.

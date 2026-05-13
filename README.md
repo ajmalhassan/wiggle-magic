@@ -38,7 +38,7 @@ Every picked element fires `wiggle:ask` with this payload:
 - `rect` + `selector` — bounding rect and a stable CSS path
 
 ```js
-// Fires when the user clicks "Ask AI"
+// Fires when the user taps Magic
 document.addEventListener('wiggle:select', e => {
   const { selections } = e.detail;
 });
