@@ -508,6 +508,7 @@
       initialPrompts: [{ role: 'system', content: sysPrompt }],
       temperature: 0.4,
       topK: 3,
+      expectedOutputs: [{ type: 'text', languages: ['en'] }],
       ...extra,
     });
   }
