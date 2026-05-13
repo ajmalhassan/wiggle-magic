@@ -11,21 +11,17 @@ settings.addEventListener('click', () => chrome.runtime.openOptionsPage());
 async function render() {
   const { wm_memory = [] } = await chrome.storage.local.get('wm_memory');
   listEl.innerHTML = '';
-  if (wm_memory.length === 0) {
-    emptyEl.hidden = false;
-    clearBtn.hidden = true;
-    exportBtn.hidden = true;
-    subEl.textContent = 'memory';
-    return;
-  }
-  emptyEl.hidden = true;
-  clearBtn.hidden = false;
-  exportBtn.hidden = false;
-  subEl.textContent = `${wm_memory.length} saved`;
+  for (const entry of wm_memory) listEl.appendChild(renderRow(entry));
+  refreshChrome();
+}
 
-  for (const entry of wm_memory) {
-    listEl.appendChild(renderRow(entry));
-  }
+function refreshChrome() {
+  const n = listEl.children.length;
+  const empty = n === 0;
+  emptyEl.hidden = !empty;
+  clearBtn.hidden = empty;
+  exportBtn.hidden = empty;
+  subEl.textContent = empty ? 'memory' : `${n} saved`;
 }
 
 function renderRow(entry) {
@@ -35,7 +31,7 @@ function renderRow(entry) {
   row.querySelector('.when').textContent = relTime(entry.ts);
   row.querySelector('.q').textContent = entry.question || '(no question)';
   const ans = row.querySelector('.a');
-  ans.textContent = entry.answer || '';
+  renderMarkdownInto(ans, entry.answer || '');
   ans.classList.add('clamp');
 
   const srcCountEl = row.querySelector('.src-count');
@@ -50,13 +46,16 @@ function renderRow(entry) {
     srcList.appendChild(li);
   }
 
-  // Click-to-expand on the answer area.
-  ans.addEventListener('click', () => row.classList.toggle('expanded'));
+  ans.addEventListener('click', (e) => {
+    if (e.target.closest('a')) return;
+    row.classList.toggle('expanded');
+  });
 
   row.querySelector('.del').addEventListener('click', async (e) => {
     e.stopPropagation();
     await deleteEntry(entry.id);
-    render();
+    row.remove();
+    refreshChrome();
   });
   return frag;
 }

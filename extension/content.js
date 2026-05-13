@@ -422,16 +422,18 @@
 
     askController = new AbortController();
     const textNode = document.createTextNode('');
-    const cursorSpan = document.createElement('span');
-    cursorSpan.className = 'cursor';
     try {
       await askAI(question, currentSelections, askController.signal, (chunk, isFirst) => {
-        if (isFirst) answerEl.replaceChildren(textNode, cursorSpan);
+        if (isFirst) {
+          answerEl.replaceChildren(textNode);
+          answerEl.classList.add('streaming');
+        }
         textNode.appendData(chunk);
         currentAnswer += chunk;
         answerEl.scrollTop = answerEl.scrollHeight;
       });
-      cursorSpan.remove();
+      renderMarkdownInto(answerEl, currentAnswer);
+      answerEl.scrollTop = answerEl.scrollHeight;
       actionsEl.classList.add('show');
     } catch (err) {
       if (err && err.name === 'AbortError') return;
@@ -441,6 +443,7 @@
       errSpan.textContent = err?.message || String(err);
       answerEl.replaceChildren(errSpan);
     } finally {
+      answerEl.classList.remove('streaming');
       askController = null;
       sheetInput.disabled = false;
       sheetSend.disabled = false;

@@ -15,7 +15,7 @@ Wiggle your cursor on any web page → enter selection mode → pick one or more
 - **Wiggle** your cursor briskly anywhere on any page → the cursor swaps to a glowing pointer, viewport edges light up
 - **Click** elements to pick them (click again to deselect)
 - Move onto the floating **Ask AI** pill → click (or press <kbd>Enter</kbd>)
-- A chat sheet rises from the bottom. Type your question, hit Send. Answer streams in.
+- A chat sheet rises from the bottom. Type your question, hit Send. Answer streams in and renders as markdown (lists, code blocks, tables, links).
 - Click **Save** to keep the answer — it shows up when you click the toolbar icon.
 - **Wiggle again** or press <kbd>Esc</kbd> to exit at any time.
 
@@ -40,13 +40,16 @@ No data ever goes to a Wiggle Magic server, because there isn't one.
 ## File layout
 
 ```
-manifest.json    # MV3 manifest
-content.js       # wiggle detector + selection UI + AI calls + save
-content.css      # overlay styles (everything prefixed with wm-)
-cursor.svg       # the cursor mask
-background.js    # service worker (just opens options on first install)
-popup.html/.js/.css   # toolbar popup — saved answers list
+manifest.json         # MV3 manifest
+content.js            # wiggle detector + selection UI + AI calls + save
+content.css           # overlay styles (everything prefixed with wm-)
+cursor.svg            # the cursor mask
+background.js         # service worker (opens options on first install)
+popup.html/.js/.css   # toolbar popup — saved answers list, Markdown export
 options.html/.js      # BYOK + backend strategy settings
+lib/marked.min.js     # marked v14 — vendored markdown parser
+lib/purify.min.js     # DOMPurify v3 — vendored HTML sanitizer
+lib/render.js         # shared markdown renderer used by content + popup
 ```
 
 ## Known v1 limitations

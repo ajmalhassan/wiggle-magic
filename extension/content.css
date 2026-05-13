@@ -301,7 +301,8 @@ body.wm-active #wm-edge { opacity: 1; }
 #wm-sheet .answer .err {
   color: #ff9ec7;
 }
-#wm-sheet .answer .cursor {
+#wm-sheet .answer.streaming::after {
+  content: "";
   display: inline-block;
   width: 7px; height: 14px;
   background: #7df9ff;
@@ -310,6 +311,83 @@ body.wm-active #wm-edge { opacity: 1; }
   animation: wm-blink 0.9s steps(2) infinite;
 }
 @keyframes wm-blink { to { opacity: 0; } }
+
+/* Rendered markdown inside the answer pane. */
+#wm-sheet .answer > *:first-child { margin-top: 0; }
+#wm-sheet .answer > *:last-child  { margin-bottom: 0; }
+#wm-sheet .answer p { margin: 0 0 8px; }
+#wm-sheet .answer h1,
+#wm-sheet .answer h2,
+#wm-sheet .answer h3,
+#wm-sheet .answer h4 {
+  margin: 12px 0 6px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: #e7ecf3;
+}
+#wm-sheet .answer h1 { font-size: 16px; }
+#wm-sheet .answer h2 { font-size: 14.5px; }
+#wm-sheet .answer h3,
+#wm-sheet .answer h4 { font-size: 13.5px; }
+#wm-sheet .answer ul,
+#wm-sheet .answer ol { margin: 4px 0 10px; padding-left: 20px; }
+#wm-sheet .answer li { margin: 2px 0; }
+#wm-sheet .answer strong, #wm-sheet .answer b { color: #e7ecf3; font-weight: 600; }
+#wm-sheet .answer em, #wm-sheet .answer i { color: #d6dbe6; }
+#wm-sheet .answer a { color: #7df9ff; text-decoration: underline; text-underline-offset: 2px; }
+#wm-sheet .answer a:hover { color: #b07cff; }
+#wm-sheet .answer code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  background: rgba(125,249,255,0.08);
+  border: 1px solid rgba(125,249,255,0.18);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+#wm-sheet .answer pre {
+  margin: 8px 0;
+  padding: 10px 12px;
+  background: #0e1219;
+  border: 1px solid #222838;
+  border-radius: 8px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.55;
+}
+#wm-sheet .answer pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+}
+#wm-sheet .answer blockquote {
+  margin: 8px 0;
+  padding: 6px 12px;
+  border-left: 3px solid #b07cff;
+  background: rgba(176,124,255,0.06);
+  border-radius: 4px;
+  color: #d6dbe6;
+}
+#wm-sheet .answer hr {
+  border: 0; border-top: 1px solid #222838;
+  margin: 12px 0;
+}
+#wm-sheet .answer table {
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 12.5px;
+  width: 100%;
+}
+#wm-sheet .answer th, #wm-sheet .answer td {
+  padding: 6px 10px;
+  border: 1px solid #222838;
+  text-align: left;
+}
+#wm-sheet .answer th {
+  background: rgba(125,249,255,0.05);
+  font-weight: 600;
+  color: #e7ecf3;
+}
 
 #wm-sheet .answer-actions {
   display: none;
