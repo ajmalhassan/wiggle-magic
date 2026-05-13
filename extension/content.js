@@ -454,17 +454,28 @@
   // ---------- AI: Nano first, BYOK fallback ----------
   async function askAI(question, payloads, signal, onChunk) {
     const settings = await loadSettings();
-    const prompt = buildPrompt(question, payloads);
     const sysPrompt = 'You are a concise, helpful assistant. The user has selected one or more elements on a web page and is asking a question about them. Answer briefly and concretely. Prefer bullets when comparing items.';
 
     if (settings.backend !== 'byok' && typeof LanguageModel !== 'undefined') {
       const avail = await LanguageModel.availability().catch(() => 'unavailable');
       if (avail === 'available' || avail === 'readily') {
-        const session = await LanguageModel.create({
-          initialPrompts: [{ role: 'system', content: sysPrompt }],
-          temperature: 0.4,
-          topK: 3,
-        });
+        const imageBlobs = payloads.some(p => p.image?.src)
+          ? await fetchImageBlobs(payloads, signal)
+          : new Map();
+
+        let session = null;
+        if (imageBlobs.size) {
+          // Some devices don't expose image input — fall through to text-only.
+          try {
+            session = await createNanoSession(sysPrompt, { expectedInputs: [{ type: 'text' }, { type: 'image' }] });
+          } catch {}
+        }
+        if (!session) session = await createNanoSession(sysPrompt);
+
+        const prompt = imageBlobs.size
+          ? buildMultimodalPrompt(question, payloads, imageBlobs)
+          : buildPrompt(question, payloads);
+
         try {
           const stream = session.promptStreaming(prompt, { signal });
           let first = true;
@@ -489,23 +500,85 @@
     if (!settings.apiKey) {
       throw new Error('No API key configured. Click the extension icon → Settings.');
     }
-    await callByokStreaming(settings, sysPrompt, prompt, signal, onChunk);
+    await callByokStreaming(settings, sysPrompt, buildPrompt(question, payloads), signal, onChunk);
+  }
+
+  function createNanoSession(sysPrompt, extra = {}) {
+    return LanguageModel.create({
+      initialPrompts: [{ role: 'system', content: sysPrompt }],
+      temperature: 0.4,
+      topK: 3,
+      ...extra,
+    });
+  }
+
+  function formatItem(p, i, imageAttached) {
+    const lines = [`[${i + 1}] <${p.tag}>`];
+    if (p.text) lines.push(`text: ${truncate(p.text, 500)}`);
+    if (p.link) lines.push(`link: ${p.link.href}`);
+    if (p.image) {
+      lines.push(imageAttached
+        ? `image: attached below as [image ${i + 1}]`
+        : `image alt: ${p.image.alt || '(none)'}`);
+    }
+    if (p.value) lines.push(`value: ${truncate(p.value, 200)}`);
+    const dataKeys = Object.keys(p.data || {});
+    if (dataKeys.length) {
+      lines.push('data: ' + dataKeys.map(k => `${k}=${p.data[k]}`).join(', '));
+    }
+    return lines.join('\n');
   }
 
   function buildPrompt(question, payloads) {
-    const items = payloads.map((p, i) => {
-      const lines = [`[${i + 1}] <${p.tag}>`];
-      if (p.text) lines.push(`text: ${truncate(p.text, 500)}`);
-      if (p.link) lines.push(`link: ${p.link.href}`);
-      if (p.image) lines.push(`image alt: ${p.image.alt || '(none)'}`);
-      if (p.value) lines.push(`value: ${truncate(p.value, 200)}`);
-      const dataKeys = Object.keys(p.data || {});
-      if (dataKeys.length) {
-        lines.push('data: ' + dataKeys.map(k => `${k}=${p.data[k]}`).join(', '));
-      }
-      return lines.join('\n');
-    }).join('\n\n');
+    const items = payloads.map((p, i) => formatItem(p, i, false)).join('\n\n');
     return `The user selected these elements on ${location.hostname}:\n\n${items}\n\nQuestion: ${question}`;
+  }
+
+  function buildMultimodalPrompt(question, payloads, imageBlobs) {
+    const items = payloads.map((p, i) => formatItem(p, i, imageBlobs.has(p))).join('\n\n');
+    const content = [
+      { type: 'text', value: `The user selected these elements on ${location.hostname}:\n\n${items}` },
+    ];
+    payloads.forEach((p, i) => {
+      const blob = imageBlobs.get(p);
+      if (blob) {
+        content.push({ type: 'text', value: `[image ${i + 1}]` });
+        content.push({ type: 'image', value: blob });
+      }
+    });
+    content.push({ type: 'text', value: `Question: ${question}` });
+    return [{ role: 'user', content }];
+  }
+
+  // Returns Map<payload, Blob>. Tries a direct CORS fetch first; falls back to
+  // the service worker (which has host_permissions: <all_urls>) for opaque-CORS
+  // images. Anything that still fails gets dropped — the caller uses alt text.
+  async function fetchImageBlobs(payloads, signal) {
+    const out = new Map();
+    const targets = payloads.filter(p => p.image?.src);
+    const results = await Promise.all(targets.map(async (p) => {
+      if (signal?.aborted) return null;
+      const blob = await fetchImageBlobDirect(p.image.src, signal)
+                 || await fetchImageBlobViaSW(p.image.src);
+      return blob?.type.startsWith('image/') ? blob : null;
+    }));
+    targets.forEach((p, i) => { if (results[i]) out.set(p, results[i]); });
+    return out;
+  }
+
+  async function fetchImageBlobDirect(url, signal) {
+    try {
+      const res = await fetch(url, { mode: 'cors', credentials: 'omit', signal });
+      return res.ok ? await res.blob() : null;
+    } catch { return null; }
+  }
+
+  async function fetchImageBlobViaSW(url) {
+    try {
+      const resp = await chrome.runtime.sendMessage({ action: 'fetchImage', url });
+      if (!resp?.ok || !resp.dataURL) return null;
+      return await (await fetch(resp.dataURL)).blob();
+    } catch { return null; }
   }
 
   function truncate(s, n) {
