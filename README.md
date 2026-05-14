@@ -10,9 +10,9 @@ Wiggle your cursor briskly on any web page → the native cursor swaps to a glow
 
 ### 1. Chrome extension — use it on any page
 
-A Manifest V3 extension in [`extension/`](extension/) brings the gesture to every site you visit. Answers come from **Gemini Nano on-device** (Chrome 138+, no API key needed) — with **BYOK fallback** to OpenAI / Anthropic / Gemini when Nano isn't available. Save answers to local memory; export to Markdown anytime. Nothing leaves your machine on the Nano path; with BYOK, prompts go directly from your browser to the provider you chose (there is no Wiggle Magic server).
+A Manifest V3 extension built from [`entrypoints/`](entrypoints/) brings the gesture to every site you visit. Answers come from **Gemini Nano on-device** (Chrome 138+, no API key needed) — with **BYOK fallback** to OpenAI / Anthropic / Gemini when Nano isn't available. Save answers to local memory; export to Markdown anytime. Nothing leaves your machine on the Nano path; with BYOK, prompts go directly from your browser to the provider you chose (there is no Wiggle Magic server).
 
-See [`extension/README.md`](extension/README.md) for load instructions.
+See [**Development**](#development) below for build + load instructions.
 
 ### 2. Single-file demo — feel the gesture
 
@@ -66,6 +66,59 @@ Defaults live in the `opts` block at the top of each script:
 ```
 
 Wiggle to enter selection mode, wiggle (or <kbd>Esc</kbd>) to leave. Press <kbd>Enter</kbd> after picking to commit.
+
+## Development
+
+The extension is built with [WXT](https://wxt.dev) (Vite + TypeScript). Source lives in `entrypoints/` (one folder per extension entry: `background`, `content`, `popup`, `options`, `help`) and shared helpers in `src/`. WXT generates `manifest.json` from `wxt.config.ts` + the entrypoint structure.
+
+### Prerequisites
+
+- Node.js ≥ 20
+- pnpm ≥ 8 (`npm install -g pnpm`)
+
+### Install
+
+```bash
+pnpm install
+```
+
+### Develop (watch mode)
+
+```bash
+pnpm dev
+```
+
+Produces `.output/chrome-mv3-dev/`. In `chrome://extensions` (Developer mode on), click **Load unpacked** and select that folder. Saves to source rebuild the bundle automatically; click the reload icon on the extension to pick up changes. Hint for macOS: dotfolders are hidden in the file picker — press <kbd>⌘</kbd>+<kbd>⇧</kbd>+<kbd>.</kbd> to reveal them.
+
+### Production build
+
+```bash
+pnpm build
+```
+
+Produces `.output/chrome-mv3/` — the directory to load for normal use, or to zip for the Chrome Web Store via `pnpm zip`.
+
+### Type-check only
+
+```bash
+pnpm compile
+```
+
+Strict mode is on (`strict`, `noImplicitOverride`, `isolatedModules`). Ambient type shims for experimental Chrome AI APIs live in [`src/lib/chrome-ai.d.ts`](src/lib/chrome-ai.d.ts).
+
+### Layout
+
+```
+entrypoints/      # one entry per extension surface
+  background.ts
+  content/        # content script + its CSS
+  popup/          # toolbar popup (memory browser)
+  options/        # settings page
+  help/           # static help page
+src/lib/          # shared utilities (markdown render, AI type shims)
+public/           # static assets copied to bundle root (cursor.svg)
+wxt.config.ts     # WXT config + manifest fields
+```
 
 ## Topics
 
