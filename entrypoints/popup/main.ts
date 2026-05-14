@@ -1,35 +1,75 @@
-const listEl    = document.getElementById('list');
-const emptyEl   = document.getElementById('empty');
-const subEl     = document.getElementById('sub');
-const clearBtn  = document.getElementById('clear');
-const exportBtn = document.getElementById('export');
-const settings  = document.getElementById('settings');
-const rowTpl    = document.getElementById('row-tpl');
+import './popup.css';
+import { renderMarkdownInto } from '@/src/lib/markdown';
+
+interface SavedSelection {
+  tag: string;
+  text?: string;
+  link?: { href: string; text?: string };
+  image?: { src: string; alt?: string };
+  selector?: string;
+}
+
+interface MemoryEntry {
+  id: string;
+  ts: number;
+  url: string;
+  title?: string;
+  hostname: string;
+  question: string;
+  answer: string;
+  selections?: SavedSelection[];
+}
+
+type Variant = 'original' | 'summary' | 'shorter' | 'bullets' | 'translated';
+type Action = 'summary' | 'shorter' | 'bullets' | 'translated';
+
+interface VariantState {
+  summary?: string;
+  shorter?: string;
+  bullets?: string;
+  translated?: string;
+  _activeVariant?: Variant;
+  _sourceLang?: string;
+}
+
+const listEl    = document.getElementById('list')!;
+const emptyEl   = document.getElementById('empty')!;
+const subEl     = document.getElementById('sub')!;
+const clearBtn  = document.getElementById('clear') as HTMLButtonElement;
+const exportBtn = document.getElementById('export') as HTMLButtonElement;
+const settings  = document.getElementById('settings')!;
+const rowTpl    = document.getElementById('row-tpl') as HTMLTemplateElement;
 
 settings.addEventListener('click', () => chrome.runtime.openOptionsPage());
 
-const VARIANTS = ['original', 'summary', 'shorter', 'bullets', 'translated'];
-const VARIANT_LABEL = {
+const VARIANTS: Variant[] = ['original', 'summary', 'shorter', 'bullets', 'translated'];
+const VARIANT_LABEL: Record<Variant, string> = {
   original:   'Original',
   summary:    'Summary',
   shorter:    'Shorter',
   bullets:    'Bullets',
   translated: 'Translated',
 };
-const ACTION_LABEL = { summary: 'Summarize', shorter: 'Shorter', bullets: 'Bullets', translated: 'Translate' };
+const ACTION_LABEL: Record<Action, string> = {
+  summary: 'Summarize',
+  shorter: 'Shorter',
+  bullets: 'Bullets',
+  translated: 'Translate',
+};
 
-const isReady = (a) => a === 'available' || a === 'readily';
+const isReady = (a: string) => a === 'available' || a === 'readily';
 
-const variantsById = new Map(); // entry.id → { summary?, shorter?, bullets?, translated?, _activeVariant?, _sourceLang? }
+const variantsById = new Map<string, VariantState>();
 
-async function render() {
-  const { wm_memory = [] } = await chrome.storage.local.get('wm_memory');
+async function render(): Promise<void> {
+  const got = await chrome.storage.local.get('wm_memory') as { wm_memory?: MemoryEntry[] };
+  const wm_memory = got.wm_memory ?? [];
   listEl.innerHTML = '';
   for (const entry of wm_memory) listEl.appendChild(renderRow(entry));
   refreshChrome();
 }
 
-function refreshChrome() {
+function refreshChrome(): void {
   const n = listEl.children.length;
   const empty = n === 0;
   emptyEl.hidden = !empty;
@@ -38,21 +78,21 @@ function refreshChrome() {
   subEl.textContent = empty ? 'memory' : `${n} saved`;
 }
 
-function renderRow(entry) {
-  const frag = rowTpl.content.cloneNode(true);
-  const row = frag.querySelector('.row');
+function renderRow(entry: MemoryEntry): DocumentFragment {
+  const frag = rowTpl.content.cloneNode(true) as DocumentFragment;
+  const row = frag.querySelector('.row') as HTMLElement;
   row.dataset.entryId = entry.id;
-  row.querySelector('.host').textContent = entry.hostname || '';
-  row.querySelector('.when').textContent = relTime(entry.ts);
-  row.querySelector('.q').textContent = entry.question || '(no question)';
-  const ans = row.querySelector('.a');
+  (row.querySelector('.host') as HTMLElement).textContent = entry.hostname || '';
+  (row.querySelector('.when') as HTMLElement).textContent = relTime(entry.ts);
+  (row.querySelector('.q') as HTMLElement).textContent = entry.question || '(no question)';
+  const ans = row.querySelector('.a') as HTMLElement;
   renderMarkdownInto(ans, entry.answer || '');
   ans.classList.add('clamp');
 
-  const srcCountEl = row.querySelector('.src-count');
-  const srcList    = row.querySelector('.src-list');
+  const srcCountEl = row.querySelector('.src-count') as HTMLElement;
+  const srcList    = row.querySelector('.src-list') as HTMLElement;
   const sels = entry.selections || [];
-  srcCountEl.textContent = sels.length;
+  srcCountEl.textContent = String(sels.length);
   for (const s of sels) {
     const li = document.createElement('li');
     const label = (s.text || s.link?.href || s.image?.alt || `<${s.tag}>`).slice(0, 80);
@@ -61,12 +101,12 @@ function renderRow(entry) {
     srcList.appendChild(li);
   }
 
-  ans.addEventListener('click', (e) => {
-    if (e.target.closest('a')) return;
+  ans.addEventListener('click', (e: MouseEvent) => {
+    if ((e.target as Element).closest('a')) return;
     row.classList.toggle('expanded');
   });
 
-  row.querySelector('.del').addEventListener('click', async (e) => {
+  (row.querySelector('.del') as HTMLButtonElement).addEventListener('click', async (e: MouseEvent) => {
     e.stopPropagation();
     await deleteEntry(entry.id);
     variantsById.delete(entry.id);
@@ -74,14 +114,14 @@ function renderRow(entry) {
     refreshChrome();
   });
 
-  for (const btn of row.querySelectorAll('.action')) {
-    btn.addEventListener('click', () => runAction(entry, row, btn.dataset.action));
+  for (const btn of row.querySelectorAll<HTMLButtonElement>('.action')) {
+    btn.addEventListener('click', () => runAction(entry, row, btn.dataset.action as Action));
   }
 
   return frag;
 }
 
-function relTime(ts) {
+function relTime(ts: number): string {
   const s = Math.floor((Date.now() - ts) / 1000);
   if (s < 60) return 'just now';
   if (s < 3600) return `${Math.floor(s / 60)}m`;
@@ -91,8 +131,9 @@ function relTime(ts) {
   return new Date(ts).toLocaleDateString();
 }
 
-async function deleteEntry(id) {
-  const { wm_memory = [] } = await chrome.storage.local.get('wm_memory');
+async function deleteEntry(id: string): Promise<void> {
+  const got = await chrome.storage.local.get('wm_memory') as { wm_memory?: MemoryEntry[] };
+  const wm_memory = got.wm_memory ?? [];
   const next = wm_memory.filter(e => e.id !== id);
   await chrome.storage.local.set({ wm_memory: next });
 }
@@ -105,7 +146,8 @@ clearBtn.addEventListener('click', async () => {
 });
 
 exportBtn.addEventListener('click', async () => {
-  const { wm_memory = [] } = await chrome.storage.local.get('wm_memory');
+  const got = await chrome.storage.local.get('wm_memory') as { wm_memory?: MemoryEntry[] };
+  const wm_memory = got.wm_memory ?? [];
   const md = toMarkdown(wm_memory);
   const blob = new Blob([md], { type: 'text/markdown' });
   const url = URL.createObjectURL(blob);
@@ -116,7 +158,7 @@ exportBtn.addEventListener('click', async () => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
 
-function toMarkdown(entries) {
+function toMarkdown(entries: MemoryEntry[]): string {
   const lines = ['# Wiggle Magic — saved answers', ''];
   for (const e of entries) {
     lines.push(`## ${e.question || '(no question)'}`);
@@ -140,31 +182,32 @@ function toMarkdown(entries) {
 
 // ---------- variant + transform actions ----------
 
-function getState(id) {
+function getState(id: string): VariantState {
   if (!variantsById.has(id)) variantsById.set(id, { _activeVariant: 'original' });
-  return variantsById.get(id);
+  return variantsById.get(id)!;
 }
 
-function setStatus(row, text, kind) {
-  const s = row.querySelector('.action-status');
+function setStatus(row: HTMLElement, text: string, kind?: 'err'): void {
+  const s = row.querySelector('.action-status') as HTMLElement;
   s.textContent = text || '';
   s.classList.toggle('err', kind === 'err');
 }
 
-function showVariant(row, entry, variant) {
+function showVariant(row: HTMLElement, entry: MemoryEntry, variant: Variant): void {
   const state = getState(entry.id);
   state._activeVariant = variant;
-  const ans = row.querySelector('.a');
-  renderMarkdownInto(ans, variant === 'original' ? (entry.answer || '') : (state[variant] || ''));
+  const ans = row.querySelector('.a') as HTMLElement;
+  const body = variant === 'original' ? (entry.answer || '') : (state[variant] || '');
+  renderMarkdownInto(ans, body);
   ans.classList.add('clamp');
   row.classList.remove('expanded');
   updateChips(row, entry);
 }
 
-function updateChips(row, entry) {
-  const strip = row.querySelector('.variants');
+function updateChips(row: HTMLElement, entry: MemoryEntry): void {
+  const strip = row.querySelector('.variants') as HTMLElement;
   const state = getState(entry.id);
-  const available = VARIANTS.filter(v => v === 'original' || state[v]);
+  const available = VARIANTS.filter(v => v === 'original' || state[v as Action]);
   strip.innerHTML = '';
   if (available.length <= 1) { strip.hidden = true; return; }
   strip.hidden = false;
@@ -177,7 +220,7 @@ function updateChips(row, entry) {
   }
 }
 
-async function runAction(entry, row, action) {
+async function runAction(entry: MemoryEntry, row: HTMLElement, action: Action): Promise<void> {
   if (row.dataset.busy) return;
   const state = getState(entry.id);
 
@@ -195,10 +238,10 @@ async function runAction(entry, row, action) {
     }
   }
 
-  const ans = row.querySelector('.a');
-  const btn = row.querySelector(`.action[data-action="${action}"]`);
-  const buttons = row.querySelectorAll('.action');
-  const originalLabel = btn.textContent;
+  const ans = row.querySelector('.a') as HTMLElement;
+  const btn = row.querySelector(`.action[data-action="${action}"]`) as HTMLButtonElement;
+  const buttons = row.querySelectorAll<HTMLButtonElement>('.action');
+  const originalLabel = btn.textContent ?? '';
   row.dataset.busy = '1';
   buttons.forEach(b => b.disabled = true);
   btn.classList.add('loading');
@@ -223,7 +266,8 @@ async function runAction(entry, row, action) {
     ans.classList.add('clamp');
     updateChips(row, entry);
   } catch (err) {
-    setStatus(row, `${ACTION_LABEL[action]} failed: ${err.message || err}`, 'err');
+    const msg = err instanceof Error ? err.message : String(err);
+    setStatus(row, `${ACTION_LABEL[action]} failed: ${msg}`, 'err');
     showVariant(row, entry, 'original');
   } finally {
     delete row.dataset.busy;
@@ -235,16 +279,27 @@ async function runAction(entry, row, action) {
 
 // ---------- adapters: dedicated Chrome AI APIs, with Prompt API fallback ----------
 
-async function* openTransform(action, text, opts = {}) {
-  const adapters = {
+type Adapter = (
+  action: Action,
+  text: string,
+  opts: { sourceLang?: string },
+) => Promise<AsyncIterable<string> | null>;
+
+async function* openTransform(
+  action: Action,
+  text: string,
+  opts: { sourceLang?: string } = {},
+): AsyncGenerator<string> {
+  const adapters: Record<Action, Adapter[]> = {
     summary:    [adaptSummarizer, adaptPrompt],
     shorter:    [adaptRewriter,   adaptPrompt],
     bullets:    [adaptPrompt],
     translated: [adaptTranslator, adaptPrompt],
-  }[action];
+  };
+  const list = adapters[action];
 
-  let lastErr = null;
-  for (const adapter of adapters) {
+  let lastErr: unknown = null;
+  for (const adapter of list) {
     try {
       const stream = await adapter(action, text, opts);
       if (stream) {
@@ -258,15 +313,26 @@ async function* openTransform(action, text, opts = {}) {
   throw lastErr || new Error('no available backend');
 }
 
-function streamFrom(handle, methodName, text, finalize) {
+// streamFrom wraps any of the streaming chrome-AI handles in a typed
+// AsyncIterable. handle is intentionally `any` — the four handles
+// (Summarizer/Rewriter/Translator/LanguageModel session) share no common
+// base type, but the dispatch is dynamic by methodName.
+function streamFrom(
+  handle: any,
+  methodName: string,
+  text: string,
+  finalize?: () => void,
+): AsyncIterable<string> {
   return (async function* () {
     try {
       for await (const chunk of handle[methodName](text)) yield chunk;
-    } finally { finalize?.(); }
+    } finally {
+      finalize?.();
+    }
   })();
 }
 
-async function adaptSummarizer(_action, text) {
+async function adaptSummarizer(_action: Action, text: string, _opts: { sourceLang?: string }): Promise<AsyncIterable<string> | null> {
   if (!('Summarizer' in self)) return null;
   if (!isReady(await Summarizer.availability().catch(() => 'unavailable'))) return null;
   const s = await Summarizer.create({
@@ -276,7 +342,7 @@ async function adaptSummarizer(_action, text) {
   return streamFrom(s, 'summarizeStreaming', text, () => s.destroy?.());
 }
 
-async function adaptRewriter(action, text) {
+async function adaptRewriter(action: Action, text: string, _opts: { sourceLang?: string }): Promise<AsyncIterable<string> | null> {
   if (!('Rewriter' in self) || action !== 'shorter') return null;
   if (!isReady(await Rewriter.availability().catch(() => 'unavailable'))) return null;
   const r = await Rewriter.create({
@@ -286,7 +352,7 @@ async function adaptRewriter(action, text) {
   return streamFrom(r, 'rewriteStreaming', text, () => r.destroy?.());
 }
 
-async function detectLang(text) {
+async function detectLang(text: string): Promise<string | null> {
   if (!('LanguageDetector' in self)) return null;
   try {
     if (!isReady(await LanguageDetector.availability().catch(() => 'unavailable'))) return null;
@@ -297,11 +363,11 @@ async function detectLang(text) {
   } catch { return null; }
 }
 
-function browserLang() {
+function browserLang(): string {
   return (navigator.language || 'en').split('-')[0].toLowerCase();
 }
 
-async function adaptTranslator(_action, text, opts) {
+async function adaptTranslator(_action: Action, text: string, opts: { sourceLang?: string }): Promise<AsyncIterable<string> | null> {
   if (!('Translator' in self)) return null;
   const target = browserLang();
   const source = opts?.sourceLang || (await detectLang(text)) || 'en';
@@ -312,12 +378,12 @@ async function adaptTranslator(_action, text, opts) {
   return streamFrom(t, 'translateStreaming', text, () => t.destroy?.());
 }
 
-async function adaptPrompt(action, text) {
+async function adaptPrompt(action: Action, text: string, _opts: { sourceLang?: string }): Promise<AsyncIterable<string> | null> {
   if (typeof LanguageModel === 'undefined') return null;
   if (!isReady(await LanguageModel.availability().catch(() => 'unavailable'))) return null;
   const target = browserLang();
   const targetName = LANG_NAMES[target] || target.toUpperCase();
-  const userPrompts = {
+  const userPrompts: Record<Action, string> = {
     summary:    `Summarize the following text in 2-4 short bullets. Keep it concrete and skim-friendly.\n\n---\n${text}`,
     shorter:    `Rewrite the following text to be noticeably shorter while preserving the key points. Match the original tone.\n\n---\n${text}`,
     bullets:    `Reformat the following text as a concise bulleted list of the main points. Use Markdown bullets, no preamble.\n\n---\n${text}`,
@@ -334,7 +400,7 @@ async function adaptPrompt(action, text) {
   return streamFrom(session, 'promptStreaming', userPrompts[action], () => session.destroy?.());
 }
 
-const LANG_NAMES = {
+const LANG_NAMES: Record<string, string> = {
   en: 'English', es: 'Spanish', ja: 'Japanese', fr: 'French', de: 'German',
   it: 'Italian', pt: 'Portuguese', zh: 'Chinese', ko: 'Korean', hi: 'Hindi',
   ar: 'Arabic', ru: 'Russian', nl: 'Dutch', tr: 'Turkish', pl: 'Polish',
