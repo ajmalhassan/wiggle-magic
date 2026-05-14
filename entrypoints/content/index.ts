@@ -1,5 +1,6 @@
 import './content.css';
 import { renderMarkdownInto } from '@/src/lib/markdown';
+import type { WmSettings } from '@/src/lib/types';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -99,11 +100,11 @@ export default defineContentScript({
     shape.style.maskImage = `url("${cursorUrl}")`;
 
     // ---------- element refs ----------
-    const edge         = root.querySelector<HTMLElement>('#wm-edge')!;
+    // #wm-edge and #wm-toast exist in the overlay markup but are CSS-only;
+    // no JS reads or writes them, so they're not queried here.
     const cursor       = root.querySelector<HTMLElement>('#wm-cursor')!;
     const highlight    = root.querySelector<HTMLElement>('#wm-highlight')!;
     const ripples      = root.querySelector<HTMLElement>('#wm-ripples')!;
-    const toast        = root.querySelector<HTMLElement>('#wm-toast')!;
     const popover      = root.querySelector<HTMLElement>('#wm-popover')!;
     const popoverBtn   = root.querySelector<HTMLButtonElement>('#wm-popover-btn')!;
     const popoverCount = popover.querySelector<HTMLElement>('.count')!;
@@ -119,9 +120,6 @@ export default defineContentScript({
     const saveBtn      = root.querySelector<HTMLButtonElement>('#wm-save')!;
     const copyBtn      = root.querySelector<HTMLButtonElement>('#wm-copy')!;
     const savedMsg     = root.querySelector<HTMLElement>('#wm-saved-msg')!;
-
-    // Suppress unused-variable warnings for refs not referenced below (toast, edge).
-    void toast; void edge;
 
     // ---------- state ----------
     let state: 'idle' | 'activating' | 'selecting' | 'sheet' = 'idle';
@@ -531,7 +529,7 @@ export default defineContentScript({
       await callByokStreaming(settings, sysPrompt, buildPrompt(question, payloads), signal, onChunk);
     }
 
-    function createNanoSession(sysPrompt: string, extra: Record<string, unknown> = {}) {
+    function createNanoSession(sysPrompt: string, extra: Partial<LanguageModelCreateOptions> = {}) {
       return LanguageModel.create({
         initialPrompts: [{ role: 'system', content: sysPrompt }],
         temperature: 0.4,
@@ -619,13 +617,6 @@ export default defineContentScript({
     }
 
     // ---------- BYOK streaming for OpenAI / Anthropic / Gemini ----------
-    interface Settings {
-      backend: string;
-      provider: string;
-      apiKey: string;
-      model: string;
-    }
-
     interface ByokSpec {
       name: string;
       url: string;
@@ -635,7 +626,7 @@ export default defineContentScript({
     }
 
     async function callByokStreaming(
-      settings: Settings,
+      settings: WmSettings,
       sysPrompt: string,
       userPrompt: string,
       signal: AbortSignal,
@@ -660,7 +651,7 @@ export default defineContentScript({
       });
     }
 
-    function byokSpec(s: Settings, sys: string, user: string): ByokSpec | null {
+    function byokSpec(s: WmSettings, sys: string, user: string): ByokSpec | null {
       const provider = s.provider || 'openai';
       if (provider === 'openai') return {
         name: 'OpenAI',
@@ -783,9 +774,9 @@ export default defineContentScript({
     }
 
     // ---------- settings ----------
-    async function loadSettings(): Promise<Settings> {
-      const def: Settings = { backend: 'auto', provider: 'openai', apiKey: '', model: '' };
-      const got = await chrome.storage.sync.get('wm_settings') as { wm_settings?: Partial<Settings> };
+    async function loadSettings(): Promise<WmSettings> {
+      const def: WmSettings = { backend: 'auto', provider: 'openai', apiKey: '', model: '' };
+      const got = await chrome.storage.sync.get('wm_settings') as { wm_settings?: Partial<WmSettings> };
       return Object.assign(def, got.wm_settings || {});
     }
 

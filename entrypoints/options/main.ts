@@ -1,9 +1,6 @@
-interface Settings {
-  backend?: string;
-  provider?: string;
-  apiKey?: string;
-  model?: string;
-}
+import type { WmSettings } from '@/src/lib/types';
+
+type Settings = Partial<WmSettings>;
 
 const backendEl  = document.getElementById('backend')  as HTMLSelectElement;
 const providerEl = document.getElementById('provider') as HTMLSelectElement;

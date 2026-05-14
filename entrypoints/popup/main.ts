@@ -1,24 +1,6 @@
 import './popup.css';
 import { renderMarkdownInto } from '@/src/lib/markdown';
-
-interface SavedSelection {
-  tag: string;
-  text?: string;
-  link?: { href: string; text?: string };
-  image?: { src: string; alt?: string };
-  selector?: string;
-}
-
-interface MemoryEntry {
-  id: string;
-  ts: number;
-  url: string;
-  title?: string;
-  hostname: string;
-  question: string;
-  answer: string;
-  selections?: SavedSelection[];
-}
+import type { MemoryEntry } from '@/src/lib/types';
 
 type Variant = 'original' | 'summary' | 'shorter' | 'bullets' | 'translated';
 type Action = 'summary' | 'shorter' | 'bullets' | 'translated';
@@ -57,7 +39,7 @@ const ACTION_LABEL: Record<Action, string> = {
   translated: 'Translate',
 };
 
-const isReady = (a: string) => a === 'available' || a === 'readily';
+const isReady = (a: AIAvailability) => a === 'available' || a === 'readily';
 
 const variantsById = new Map<string, VariantState>();
 
@@ -115,7 +97,10 @@ function renderRow(entry: MemoryEntry): DocumentFragment {
   });
 
   for (const btn of row.querySelectorAll<HTMLButtonElement>('.action')) {
-    btn.addEventListener('click', () => runAction(entry, row, btn.dataset.action as Action));
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.action as Action | undefined;
+      if (action) runAction(entry, row, action);
+    });
   }
 
   return frag;
@@ -285,21 +270,20 @@ type Adapter = (
   opts: { sourceLang?: string },
 ) => Promise<AsyncIterable<string> | null>;
 
+const ADAPTERS: Record<Action, Adapter[]> = {
+  summary:    [adaptSummarizer, adaptPrompt],
+  shorter:    [adaptRewriter,   adaptPrompt],
+  bullets:    [adaptPrompt],
+  translated: [adaptTranslator, adaptPrompt],
+};
+
 async function* openTransform(
   action: Action,
   text: string,
   opts: { sourceLang?: string } = {},
 ): AsyncGenerator<string> {
-  const adapters: Record<Action, Adapter[]> = {
-    summary:    [adaptSummarizer, adaptPrompt],
-    shorter:    [adaptRewriter,   adaptPrompt],
-    bullets:    [adaptPrompt],
-    translated: [adaptTranslator, adaptPrompt],
-  };
-  const list = adapters[action];
-
   let lastErr: unknown = null;
-  for (const adapter of list) {
+  for (const adapter of ADAPTERS[action]) {
     try {
       const stream = await adapter(action, text, opts);
       if (stream) {
@@ -313,19 +297,13 @@ async function* openTransform(
   throw lastErr || new Error('no available backend');
 }
 
-// streamFrom wraps any of the streaming chrome-AI handles in a typed
-// AsyncIterable. handle is intentionally `any` — the four handles
-// (Summarizer/Rewriter/Translator/LanguageModel session) share no common
-// base type, but the dispatch is dynamic by methodName.
-function streamFrom(
-  handle: any,
-  methodName: string,
-  text: string,
-  finalize?: () => void,
-): AsyncIterable<string> {
+// withFinalize wraps any AsyncIterable so a finalize callback fires after the
+// iteration ends (or is cancelled). Used to call .destroy() on Chrome AI
+// handles once their stream completes.
+function withFinalize(stream: AsyncIterable<string>, finalize?: () => void): AsyncIterable<string> {
   return (async function* () {
     try {
-      for await (const chunk of handle[methodName](text)) yield chunk;
+      for await (const chunk of stream) yield chunk;
     } finally {
       finalize?.();
     }
@@ -339,7 +317,7 @@ async function adaptSummarizer(_action: Action, text: string, _opts: { sourceLan
     type: 'tl;dr', format: 'markdown', length: 'short',
     expectedInputLanguages: ['en'], outputLanguage: 'en',
   });
-  return streamFrom(s, 'summarizeStreaming', text, () => s.destroy?.());
+  return withFinalize(s.summarizeStreaming(text), () => s.destroy?.());
 }
 
 async function adaptRewriter(action: Action, text: string, _opts: { sourceLang?: string }): Promise<AsyncIterable<string> | null> {
@@ -349,7 +327,7 @@ async function adaptRewriter(action: Action, text: string, _opts: { sourceLang?:
     length: 'shorter', format: 'markdown',
     expectedInputLanguages: ['en'], outputLanguage: 'en',
   });
-  return streamFrom(r, 'rewriteStreaming', text, () => r.destroy?.());
+  return withFinalize(r.rewriteStreaming(text), () => r.destroy?.());
 }
 
 async function detectLang(text: string): Promise<string | null> {
@@ -372,10 +350,10 @@ async function adaptTranslator(_action: Action, text: string, opts: { sourceLang
   const target = browserLang();
   const source = opts?.sourceLang || (await detectLang(text)) || 'en';
   if (source === target) return null;
-  const avail = await Translator.availability({ sourceLanguage: source, targetLanguage: target }).catch(() => 'unavailable');
+  const avail = await Translator.availability({ sourceLanguage: source, targetLanguage: target }).catch((): AIAvailability => 'unavailable');
   if (!isReady(avail)) return null;
   const t = await Translator.create({ sourceLanguage: source, targetLanguage: target });
-  return streamFrom(t, 'translateStreaming', text, () => t.destroy?.());
+  return withFinalize(t.translateStreaming(text), () => t.destroy?.());
 }
 
 async function adaptPrompt(action: Action, text: string, _opts: { sourceLang?: string }): Promise<AsyncIterable<string> | null> {
@@ -397,7 +375,7 @@ async function adaptPrompt(action: Action, text: string, _opts: { sourceLang?: s
     topK: 3,
     expectedOutputs: [{ type: 'text', languages: outputLangs }],
   });
-  return streamFrom(session, 'promptStreaming', userPrompts[action], () => session.destroy?.());
+  return withFinalize(session.promptStreaming(userPrompts[action]), () => session.destroy?.());
 }
 
 const LANG_NAMES: Record<string, string> = {
