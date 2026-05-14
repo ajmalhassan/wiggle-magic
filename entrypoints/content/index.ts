@@ -1,5 +1,3 @@
-/// <reference path="../.wxt/wxt.d.ts" />
-
 import './content.css';
 import { renderMarkdownInto } from '@/src/lib/markdown';
 
