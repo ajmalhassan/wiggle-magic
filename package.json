@@ -1,0 +1,24 @@
+{
+  "name": "wiggle-magic",
+  "version": "0.1.0",
+  "description": "Wiggle your cursor on any page to ask AI about what you see. Powered by Gemini Nano (on-device) with optional BYOK fallback.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "compile": "tsc --noEmit",
+    "postinstall": "wxt prepare"
+  },
+  "dependencies": {
+    "dompurify": "^3.1.0",
+    "marked": "^14.1.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.1.42",
+    "@types/dompurify": "^3.0.5",
+    "typescript": "^5.6.0",
+    "wxt": "^0.20.0"
+  }
+}

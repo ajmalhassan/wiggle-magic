@@ -1,52 +1,60 @@
-const backendEl  = document.getElementById('backend');
-const providerEl = document.getElementById('provider');
-const keyEl      = document.getElementById('apiKey');
-const modelEl    = document.getElementById('model');
-const modelHint  = document.getElementById('modelHint');
-const saveBtn    = document.getElementById('save');
-const savedMsg   = document.getElementById('saved');
-const nanoStatus = document.getElementById('nano-status');
-const dlBtn      = document.getElementById('nano-download');
-const dlProgress = document.getElementById('dl-progress');
-const dlBarFill  = document.getElementById('dl-bar-fill');
-const dlPct      = document.getElementById('dl-pct');
-const welcomeEl   = document.getElementById('welcome');
-const welcomeGo   = document.getElementById('welcome-go');
-const welcomeSkip = document.getElementById('welcome-skip');
+import type { WmSettings } from '@/src/lib/types';
 
-const DEFAULT_MODELS = {
+type Settings = Partial<WmSettings>;
+
+const backendEl  = document.getElementById('backend')  as HTMLSelectElement;
+const providerEl = document.getElementById('provider') as HTMLSelectElement;
+const keyEl      = document.getElementById('apiKey')   as HTMLInputElement;
+const modelEl    = document.getElementById('model')    as HTMLInputElement;
+const modelHint  = document.getElementById('modelHint')!;
+const saveBtn    = document.getElementById('save') as HTMLButtonElement;
+const savedMsg   = document.getElementById('saved')!;
+const nanoStatus = document.getElementById('nano-status')!;
+const dlBtn      = document.getElementById('nano-download') as HTMLButtonElement;
+const dlProgress = document.getElementById('dl-progress')!;
+const dlBarFill  = document.getElementById('dl-bar-fill') as HTMLElement;
+const dlPct      = document.getElementById('dl-pct')!;
+const welcomeEl   = document.getElementById('welcome') as HTMLElement;
+const welcomeGo   = document.getElementById('welcome-go')!;
+const welcomeSkip = document.getElementById('welcome-skip')!;
+
+const DEFAULT_MODELS: Record<string, string> = {
   openai:    'gpt-5.4-mini',
   anthropic: 'claude-haiku-4-5',
   gemini:    'gemini-2.5-flash',
 };
 
-function updateHint() {
+function updateHint(): void {
   modelHint.textContent = `defaults to ${DEFAULT_MODELS[providerEl.value]}`;
 }
 providerEl.addEventListener('change', updateHint);
 
-async function load() {
-  const { wm_settings = {}, wm_welcomed } = await chrome.storage.sync.get(['wm_settings', 'wm_welcomed']);
+async function load(): Promise<void> {
+  const got = await chrome.storage.sync.get(['wm_settings', 'wm_welcomed']) as {
+    wm_settings?: Settings;
+    wm_welcomed?: boolean;
+  };
+  const wm_settings = got.wm_settings ?? {};
   backendEl.value  = wm_settings.backend  || 'auto';
   providerEl.value = wm_settings.provider || 'openai';
   keyEl.value      = wm_settings.apiKey   || '';
   modelEl.value    = wm_settings.model    || '';
   updateHint();
-  if (!wm_welcomed) welcomeEl.hidden = false;
+  if (!got.wm_welcomed) welcomeEl.hidden = false;
   checkNano();
 }
 
-async function dismissWelcome() {
+async function dismissWelcome(): Promise<void> {
   welcomeEl.hidden = true;
   await chrome.storage.sync.set({ wm_welcomed: true });
 }
 welcomeGo.addEventListener('click', async () => {
   await dismissWelcome();
-  document.getElementById('ai-backend').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('ai-backend')!.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 welcomeSkip.addEventListener('click', dismissWelcome);
 
-async function checkNano() {
+async function checkNano(): Promise<void> {
   nanoStatus.classList.remove('ok', 'bad');
   dlBtn.hidden = true;
   dlProgress.hidden = true;
@@ -62,7 +70,7 @@ async function checkNano() {
       nanoStatus.textContent = '✓ Gemini Nano is available on this device.';
       nanoStatus.classList.add('ok');
     } else if (avail === 'downloadable') {
-      nanoStatus.textContent = 'Gemini Nano is supported, but the on-device model (~2 GB) hasn\'t been downloaded yet.';
+      nanoStatus.textContent = "Gemini Nano is supported, but the on-device model (~2 GB) hasn't been downloaded yet.";
       dlBtn.hidden = false;
     } else if (avail === 'downloading' || avail === 'after-download') {
       nanoStatus.textContent = 'Gemini Nano is downloading in the background. This can take a few minutes; reload this page to recheck.';
@@ -71,7 +79,8 @@ async function checkNano() {
       nanoStatus.classList.add('bad');
     }
   } catch (err) {
-    nanoStatus.textContent = `Could not check Gemini Nano availability: ${err.message}`;
+    const msg = err instanceof Error ? err.message : String(err);
+    nanoStatus.textContent = `Could not check Gemini Nano availability: ${msg}`;
     nanoStatus.classList.add('bad');
   }
 }
@@ -93,19 +102,20 @@ dlBtn.addEventListener('click', async () => {
         });
       },
     });
-    try { session.destroy?.(); } catch {}
+    try { session.destroy?.(); } catch { /* swallow */ }
     dlProgress.hidden = true;
     await checkNano();
   } catch (err) {
     dlProgress.hidden = true;
     dlBtn.hidden = false;
-    nanoStatus.textContent = `Download failed: ${err.message}. Try the manual steps below, or use a BYOK key.`;
+    const msg = err instanceof Error ? err.message : String(err);
+    nanoStatus.textContent = `Download failed: ${msg}. Try the manual steps below, or use a BYOK key.`;
     nanoStatus.classList.add('bad');
   }
 });
 
 saveBtn.addEventListener('click', async () => {
-  const wm_settings = {
+  const wm_settings: Settings = {
     backend:  backendEl.value,
     provider: providerEl.value,
     apiKey:   keyEl.value.trim(),
