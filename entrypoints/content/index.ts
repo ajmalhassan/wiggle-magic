@@ -106,6 +106,13 @@ export default defineContentScript({
         </div>
       </div>
     </div>
+    <div id="wm-coach" role="dialog" aria-label="Welcome to Magic" hidden>
+      <div class="step">① Wiggle your cursor — already!</div>
+      <div class="step">② Click anything to pick it.</div>
+      <div class="step">③ Press <kbd>⏎</kbd> to ask.</div>
+      <div class="tip">Tip: <kbd>Alt</kbd>+<kbd>⇧</kbd>+<kbd>M</kbd> does the same.</div>
+      <button id="wm-coach-dismiss" type="button">Got it</button>
+    </div>
     <div id="wm-toast"></div>
   `;
     document.documentElement.appendChild(root);
@@ -142,6 +149,8 @@ export default defineContentScript({
     const staleBanner  = root.querySelector<HTMLElement>('#wm-stale')!;
     const rerunBtn     = root.querySelector<HTMLButtonElement>('#wm-rerun')!;
     const backendPill  = root.querySelector<HTMLElement>('#wm-backend-pill')!;
+    const coach        = root.querySelector<HTMLElement>('#wm-coach')!;
+    const coachDismiss = root.querySelector<HTMLButtonElement>('#wm-coach-dismiss')!;
 
     // ---------- state ----------
     let samples: { x: number; y: number; t: number }[] = [];
@@ -213,6 +222,7 @@ export default defineContentScript({
         cursor.style.transform = `translate(${x}px, ${y}px) scale(1)`;
       });
       setTimeout(() => { if (picker.mode === 'activating') picker.mode = 'selecting'; }, 220);
+      maybeShowCoach();
     }
 
     function deactivate(): void {
@@ -466,6 +476,7 @@ export default defineContentScript({
         return;
       }
       overlay.unmountChipBar();
+      dismissCoach();
       sheet.show(picker.picks.map(p => p.payload));
     }
 
@@ -1169,6 +1180,20 @@ export default defineContentScript({
       return `${provider} · cloud`;
     }
 
+    // ---------- coachmark ----------
+    async function maybeShowCoach(): Promise<void> {
+      const { 'wm:first-run': seen } = await chrome.storage.local.get('wm:first-run') as { 'wm:first-run'?: boolean };
+      if (seen) return;
+      coach.hidden = false;
+      requestAnimationFrame(() => coach.classList.add('visible'));
+    }
+
+    async function dismissCoach(): Promise<void> {
+      coach.classList.remove('visible');
+      setTimeout(() => { coach.hidden = true; }, 220);
+      await chrome.storage.local.set({ 'wm:first-run': true });
+    }
+
     // ---------- settings ----------
     async function loadSettings(): Promise<WmSettings> {
       const def: WmSettings = { backend: 'auto', provider: 'openai', apiKey: '', model: '' };
@@ -1269,6 +1294,7 @@ export default defineContentScript({
       }
       if (e.key === 'Enter' && picker.mode === 'selecting' && picker.picks.length > 0) picker.commit();
     });
+    coachDismiss.addEventListener('click', dismissCoach);
     sheetClose.addEventListener('click', sheet.close);
     sheetSend.addEventListener('click', sheet.askAI);
     sheetInput.addEventListener('keydown', (e: KeyboardEvent) => {
