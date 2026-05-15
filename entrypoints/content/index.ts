@@ -1,6 +1,6 @@
 import './content.css';
 import { renderMarkdownInto } from '@/src/lib/markdown';
-import type { WmSettings, MemoryEntry } from '@/src/lib/types';
+import type { WmSettings, MemoryEntry, MemoryAction } from '@/src/lib/types';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -144,6 +144,7 @@ export default defineContentScript({
     const saveBtn      = root.querySelector<HTMLButtonElement>('#wm-save')!;
     const copyBtn      = root.querySelector<HTMLButtonElement>('#wm-copy')!;
     const savedMsg     = root.querySelector<HTMLElement>('#wm-saved-msg')!;
+    const heroRowEl    = root.querySelector<HTMLElement>('#wm-hero')!;
     const heroSummary  = root.querySelector<HTMLButtonElement>('#wm-hero-summary')!;
     const heroCompare  = root.querySelector<HTMLButtonElement>('#wm-hero-compare')!;
     const staleBanner  = root.querySelector<HTMLElement>('#wm-stale')!;
@@ -158,13 +159,15 @@ export default defineContentScript({
     let cursorX = 0, cursorY = 0;
     let rafPending = false;
     let lastHighlightEl: Element | null = null;
+    let lastLeaf: Element | null = null;
     let viewportShiftPending = false;
+    let coachSeen: boolean | null = null;  // null = unknown, true/false = cached
 
     let currentAnswer = '';
     let currentQuestion = '';
     let askController: AbortController | null = null;
     let answerSavedThisRun = false;
-    const sheetState = { activeAction: null as 'summary' | 'compare' | 'ask' | null, stale: false };
+    const sheetState = { activeAction: null as MemoryAction | null, stale: false };
 
     // ---------- wiggle detector ----------
     function onPointerMove(e: MouseEvent): void {
@@ -236,6 +239,7 @@ export default defineContentScript({
       picker.picks.length = 0;
       samples.length = 0;
       lastHighlightEl = null;
+      lastLeaf = null;
     }
 
     function spawnBurst(x: number, y: number): void {
@@ -295,9 +299,12 @@ export default defineContentScript({
           highlight.style.opacity = '0';
           tagBadge.style.opacity = '0';
           lastHighlightEl = null;
+          lastLeaf = null;
         }
         return;
       }
+      if (leaf === lastLeaf) return;
+      lastLeaf = leaf;
       const resolved = picker.resolveTarget(leaf);
       if (resolved === lastHighlightEl) return;
       lastHighlightEl = resolved;
@@ -333,9 +340,11 @@ export default defineContentScript({
       chipbar.classList.remove('visible');
     }
 
-    function renderChipBar(): void {
-      chipbarCount.textContent = `${picker.picks.length} picked`;
-      chipbarChips.innerHTML = '';
+    function renderChipsInto(
+      container: HTMLElement,
+      onRemove: (id: string) => void,
+    ): void {
+      container.innerHTML = '';
       for (const p of picker.picks) {
         const chip = document.createElement('div');
         chip.className = 'wm-chip';
@@ -358,12 +367,17 @@ export default defineContentScript({
         close.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
-          picker.remove(p.id);
+          onRemove(p.id);
         });
 
         chip.append(icon, label, close);
-        chipbarChips.appendChild(chip);
+        container.appendChild(chip);
       }
+    }
+
+    function renderChipBar(): void {
+      chipbarCount.textContent = `${picker.picks.length} picked`;
+      renderChipsInto(chipbarChips, (id) => picker.remove(id));
     }
 
     function chipIconFor(p: Pick): string {
@@ -410,6 +424,7 @@ export default defineContentScript({
       else overlay.unmountChipBar();
       // Repaint so the dashed/filled state of the currently-hovered element updates.
       lastHighlightEl = null;
+      lastLeaf = null;
     }
 
     function positionMarker(marker: HTMLElement, el: Element): void {
@@ -519,7 +534,7 @@ export default defineContentScript({
           code: 'nano-downloading',
           title: 'Model still downloading',
           body: 'Gemini Nano is still downloading. Try again in a moment, or set a BYOK key in Options to use cloud instead.',
-          primary: { label: 'Open options', onClick: () => chrome.runtime.sendMessage({ action: 'openOptions' }).catch(() => {}) },
+          primary: { label: 'Open options', onClick: openOptions },
         };
       }
       if (/Gemini Nano isn't ready/i.test(msg)) {
@@ -527,7 +542,7 @@ export default defineContentScript({
           code: 'nano-unavailable',
           title: "On-device AI isn't ready",
           body: 'Gemini Nano needs Chrome 138+ and a one-time model download.',
-          primary: { label: 'Set up Nano', onClick: () => chrome.runtime.sendMessage({ action: 'openOptions' }).catch(() => {}) },
+          primary: { label: 'Set up Nano', onClick: openOptions },
         };
       }
       if (/No API key configured/i.test(msg)) {
@@ -535,7 +550,7 @@ export default defineContentScript({
           code: 'byok-no-key',
           title: 'Add an API key to use cloud',
           body: 'You picked a cloud provider but no key is saved.',
-          primary: { label: 'Add key', onClick: () => chrome.runtime.sendMessage({ action: 'openOptions' }).catch(() => {}) },
+          primary: { label: 'Add key', onClick: openOptions },
         };
       }
       return {
@@ -547,38 +562,8 @@ export default defineContentScript({
     }
 
     // ---------- sheet ----------
-    function heroRow(): HTMLElement { return root.querySelector<HTMLElement>('#wm-hero')!; }
-
     function renderSheetChips(): void {
-      sheetChips.innerHTML = '';
-      for (const p of picker.picks) {
-        const chip = document.createElement('div');
-        chip.className = 'wm-chip';
-        chip.dataset.pickId = p.id;
-        chip.title = p.label;
-
-        const icon = document.createElement('span');
-        icon.className = 'icon';
-        icon.textContent = chipIconFor(p);
-
-        const label = document.createElement('span');
-        label.className = 'label';
-        label.textContent = truncate(p.label, 24);
-
-        const close = document.createElement('button');
-        close.className = 'close';
-        close.type = 'button';
-        close.setAttribute('aria-label', 'Remove pick');
-        close.textContent = '×';
-        close.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          sheet.onChipRemove(p.id);
-        });
-
-        chip.append(icon, label, close);
-        sheetChips.appendChild(chip);
-      }
+      renderChipsInto(sheetChips, (id) => sheet.onChipRemove(id));
     }
 
     function onChipRemoveInSheet(id: string): void {
@@ -634,7 +619,7 @@ export default defineContentScript({
 
       sheetState.activeAction = null;
       sheetState.stale = false;
-      heroRow().hidden = false;
+      heroRowEl.hidden = false;
       staleBanner.hidden = true;
       heroCompare.hidden = picker.picks.length < 2;
 
@@ -659,6 +644,7 @@ export default defineContentScript({
         document.body.classList.remove('wm-active');
         samples.length = 0;
         lastHighlightEl = null;
+        lastLeaf = null;
         currentAnswer = '';
         currentQuestion = '';
         picker.mode = 'idle';
@@ -669,7 +655,7 @@ export default defineContentScript({
       const question = sheetInput.value.trim();
       if (!question || askController) return;
       currentQuestion = question;
-      heroRow().hidden = true;
+      heroRowEl.hidden = true;
       sheetState.activeAction = 'ask';
       sheetState.stale = false;
       staleBanner.hidden = true;
@@ -714,7 +700,7 @@ export default defineContentScript({
 
     async function runSummarize(): Promise<void> {
       if (picker.picks.length === 0 || askController) return;
-      heroRow().hidden = true;
+      heroRowEl.hidden = true;
       sheetState.activeAction = 'summary';
       sheetState.stale = false;
       staleBanner.hidden = true;
@@ -741,6 +727,7 @@ export default defineContentScript({
           answerEl.scrollTop = answerEl.scrollHeight;
         });
         renderMarkdownInto(answerEl, currentAnswer);
+        answerEl.scrollTop = answerEl.scrollHeight;
         actionsEl.classList.add('show');
       } catch (err) {
         if (err && (err as Error).name === 'AbortError') return;
@@ -754,7 +741,7 @@ export default defineContentScript({
 
     async function runCompare(): Promise<void> {
       if (picker.picks.length < 2 || askController) return;
-      heroRow().hidden = true;
+      heroRowEl.hidden = true;
       sheetState.activeAction = 'compare';
       sheetState.stale = false;
       staleBanner.hidden = true;
@@ -786,6 +773,7 @@ export default defineContentScript({
           },
         );
         renderMarkdownInto(answerEl, currentAnswer);
+        answerEl.scrollTop = answerEl.scrollHeight;
         actionsEl.classList.add('show');
       } catch (err) {
         if (err && (err as Error).name === 'AbortError') return;
@@ -987,6 +975,10 @@ export default defineContentScript({
       return s.length > n ? s.slice(0, n) + '…' : s;
     }
 
+    function openOptions(): void {
+      chrome.runtime.sendMessage({ action: 'openOptions' }).catch(() => {});
+    }
+
     // ---------- BYOK streaming for OpenAI / Anthropic / Gemini ----------
     interface ByokSpec {
       name: string;
@@ -1180,13 +1172,18 @@ export default defineContentScript({
 
     // ---------- coachmark ----------
     async function maybeShowCoach(): Promise<void> {
-      const { 'wm:first-run': seen } = await chrome.storage.local.get('wm:first-run') as { 'wm:first-run'?: boolean };
-      if (seen) return;
+      if (coachSeen) return;
+      if (coachSeen === null) {
+        const { 'wm:first-run': seen } = await chrome.storage.local.get('wm:first-run') as { 'wm:first-run'?: boolean };
+        coachSeen = !!seen;
+        if (coachSeen) return;
+      }
       coach.hidden = false;
       requestAnimationFrame(() => coach.classList.add('visible'));
     }
 
     async function dismissCoach(): Promise<void> {
+      coachSeen = true;
       coach.classList.remove('visible');
       setTimeout(() => { coach.hidden = true; }, 220);
       await chrome.storage.local.set({ 'wm:first-run': true });
@@ -1303,9 +1300,7 @@ export default defineContentScript({
     saveBtn.addEventListener('click', sheet.save);
     copyBtn.addEventListener('click', sheet.copy);
     rerunBtn.addEventListener('click', rerun);
-    backendPill.addEventListener('click', () => {
-      chrome.runtime.sendMessage({ action: 'openOptions' }).catch(() => {});
-    });
+    backendPill.addEventListener('click', openOptions);
 
     const onViewportShift = () => {
       if (picker.mode !== 'selecting' || viewportShiftPending) return;
@@ -1315,6 +1310,7 @@ export default defineContentScript({
         if (picker.mode !== 'selecting') return;
         overlay.repaintMarkers();
         lastHighlightEl = null;
+        lastLeaf = null;
         overlay.paintHighlight();
       });
     };
