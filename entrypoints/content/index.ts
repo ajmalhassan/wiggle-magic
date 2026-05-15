@@ -63,10 +63,23 @@ export default defineContentScript({
         <button class="close" id="wm-sheet-close" type="button" aria-label="Close">×</button>
         <div class="header">
           <b>Magic</b>
-          <span id="wm-sheet-count"></span>
+          <span class="backend-pill" id="wm-backend-pill" hidden></span>
         </div>
         <div class="chips" id="wm-sheet-chips"></div>
+        <div class="hero" id="wm-hero">
+          <button class="hero-btn" id="wm-hero-summary" type="button">
+            <svg class="sparkle" viewBox="-3 -3 6 6" aria-hidden="true">
+              <polygon points="0,-2.6 0.7,-0.7 2.6,0 0.7,0.7 0,2.6 -0.7,0.7 -2.6,0 -0.7,-0.7" fill="#0b0d12"/>
+            </svg>
+            Summarize
+          </button>
+          <button class="hero-btn" id="wm-hero-compare" type="button" hidden>⇄ Compare these</button>
+        </div>
         <div class="answer empty" id="wm-sheet-answer"></div>
+        <div class="stale-banner" id="wm-stale" hidden>
+          <span>⚠ Selection changed — answer may be stale</span>
+          <button id="wm-rerun" type="button">↻ Rerun</button>
+        </div>
         <div class="answer-actions" id="wm-sheet-actions">
           <button id="wm-save" type="button" aria-label="Save answer">
             <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
@@ -83,12 +96,12 @@ export default defineContentScript({
           <span class="saved" id="wm-saved-msg" style="display:none">saved ✓</span>
         </div>
         <div class="ask">
-          <input id="wm-sheet-input" type="text" placeholder="Ask Magic about your selection…" autocomplete="off" />
+          <input id="wm-sheet-input" type="text" placeholder="Ask anything about your selection…" autocomplete="off" />
           <button id="wm-sheet-send" type="button">
             <svg class="sparkle" viewBox="-3 -3 6 6" aria-hidden="true">
               <polygon points="0,-2.6 0.7,-0.7 2.6,0 0.7,0.7 0,2.6 -0.7,0.7 -2.6,0 -0.7,-0.7" fill="#0b0d12"/>
             </svg>
-            <span id="wm-sheet-send-label">Send</span>
+            <span id="wm-sheet-send-label">Ask</span>
           </button>
         </div>
       </div>
@@ -115,7 +128,6 @@ export default defineContentScript({
     const chipbarChips = root.querySelector<HTMLElement>('#wm-chipbar-chips')!;
     const sheetEl      = root.querySelector<HTMLElement>('#wm-sheet')!;
     const sheetChips   = root.querySelector<HTMLElement>('#wm-sheet-chips')!;
-    const sheetCount   = root.querySelector<HTMLElement>('#wm-sheet-count')!;
     const sheetInput   = root.querySelector<HTMLInputElement>('#wm-sheet-input')!;
     const sheetSend    = root.querySelector<HTMLButtonElement>('#wm-sheet-send')!;
     const sheetSendLabel = root.querySelector<HTMLElement>('#wm-sheet-send-label')!;
@@ -125,6 +137,11 @@ export default defineContentScript({
     const saveBtn      = root.querySelector<HTMLButtonElement>('#wm-save')!;
     const copyBtn      = root.querySelector<HTMLButtonElement>('#wm-copy')!;
     const savedMsg     = root.querySelector<HTMLElement>('#wm-saved-msg')!;
+    const heroSummary  = root.querySelector<HTMLButtonElement>('#wm-hero-summary')!;
+    const heroCompare  = root.querySelector<HTMLButtonElement>('#wm-hero-compare')!;
+    const staleBanner  = root.querySelector<HTMLElement>('#wm-stale')!;
+    const rerunBtn     = root.querySelector<HTMLButtonElement>('#wm-rerun')!;
+    const backendPill  = root.querySelector<HTMLElement>('#wm-backend-pill')!;
 
     // ---------- state ----------
     let samples: { x: number; y: number; t: number }[] = [];
@@ -139,6 +156,7 @@ export default defineContentScript({
     let currentSelections: Payload[] = [];
     let askController: AbortController | null = null;
     let answerSavedThisRun = false;
+    const sheetState = { activeAction: null as 'summary' | 'compare' | 'ask' | null, stale: false };
 
     // ---------- wiggle detector ----------
     function onPointerMove(e: MouseEvent): void {
@@ -441,6 +459,51 @@ export default defineContentScript({
     }
 
     // ---------- sheet ----------
+    function heroRow(): HTMLElement { return root.querySelector<HTMLElement>('#wm-hero')!; }
+
+    function renderSheetChips(): void {
+      sheetChips.innerHTML = '';
+      for (const p of picker.picks) {
+        const chip = document.createElement('div');
+        chip.className = 'wm-chip';
+        chip.dataset.pickId = p.id;
+        chip.title = p.label;
+
+        const icon = document.createElement('span');
+        icon.className = 'icon';
+        icon.textContent = chipIconFor(p);
+
+        const label = document.createElement('span');
+        label.className = 'label';
+        label.textContent = truncate(p.label, 24);
+
+        const close = document.createElement('button');
+        close.className = 'close';
+        close.type = 'button';
+        close.setAttribute('aria-label', 'Remove pick');
+        close.textContent = '×';
+        close.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          sheet.onChipRemove(p.id);
+        });
+
+        chip.append(icon, label, close);
+        sheetChips.appendChild(chip);
+      }
+    }
+
+    function onChipRemoveInSheet(id: string): void {
+      picker.remove(id);
+      // If we removed the last pick, the answer is meaningless — close the sheet.
+      if (picker.picks.length === 0) {
+        sheet.close();
+        return;
+      }
+      renderSheetChips();
+      // Task 9 wires sheet.stale = true here when an answer exists.
+    }
+
     function showSheet(payloads: Payload[]): void {
       picker.mode = 'sheet';
       cursor.classList.remove('visible');
@@ -457,18 +520,15 @@ export default defineContentScript({
       sheetInput.value = '';
       sheetInput.disabled = false;
       sheetSend.disabled = false;
-      sheetSendLabel.textContent = 'Send';
+      sheetSendLabel.textContent = 'Ask';
 
-      sheetChips.innerHTML = '';
-      for (const p of payloads) {
-        const chip = document.createElement('div');
-        chip.className = 'chip';
-        const label = labelFor(p);
-        chip.textContent = label.slice(0, 42) + (label.length > 42 ? '…' : '');
-        chip.title = label;
-        sheetChips.appendChild(chip);
-      }
-      sheetCount.textContent = payloads.length + ' selected';
+      sheetState.activeAction = null;
+      sheetState.stale = false;
+      heroRow().hidden = false;
+      staleBanner.hidden = true;
+      heroCompare.hidden = picker.picks.length < 2;
+
+      renderSheetChips();
 
       requestAnimationFrame(() => sheetEl.classList.add('visible'));
       setTimeout(() => sheetEl.classList.add('expanded'), 380);
@@ -497,6 +557,8 @@ export default defineContentScript({
       const question = sheetInput.value.trim();
       if (!question || askController) return;
       currentQuestion = question;
+      heroRow().hidden = true;
+      sheetState.activeAction = 'ask';
       currentAnswer = '';
       answerEl.classList.remove('empty');
       answerEl.innerHTML = '<span class="placeholder">Thinking…</span>';
@@ -920,7 +982,7 @@ export default defineContentScript({
       pick,
       resolveTarget,
     };
-    const sheet   = { show: showSheet, close: closeSheet, askAI: submitAsk, save: saveCurrentAnswer, copy: copyCurrentAnswer };
+    const sheet   = { show: showSheet, close: closeSheet, askAI: submitAsk, save: saveCurrentAnswer, copy: copyCurrentAnswer, onChipRemove: onChipRemoveInSheet };
 
     // ---------- bindings ----------
     document.addEventListener('mousemove', wiggle.onMove, { passive: true });
