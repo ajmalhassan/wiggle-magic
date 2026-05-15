@@ -833,12 +833,13 @@ export default defineContentScript({
       commit,
       togglePick,
       getPayload,
+      pick,
     };
     const sheet   = { show: showSheet, close: closeSheet, askAI: submitAsk, save: saveCurrentAnswer, copy: copyCurrentAnswer };
 
     // ---------- bindings ----------
     document.addEventListener('mousemove', wiggle.onMove, { passive: true });
-    document.addEventListener('click', pick, true);
+    document.addEventListener('click', picker.pick, true);
     document.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (picker.mode === 'sheet') sheet.close();
