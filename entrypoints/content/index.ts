@@ -30,6 +30,9 @@ export default defineContentScript({
       rect: { x: number; y: number; width: number; height: number };
     }
 
+    type Mode = 'idle' | 'activating' | 'selecting' | 'sheet';
+    interface Pick { id: string; el: Element; marker: HTMLDivElement; payload: Payload; label: string; }
+
     // ---------- scaffold the overlay ----------
     const root = document.createElement('div');
     root.id = 'wm-root';
@@ -108,7 +111,7 @@ export default defineContentScript({
     const popover      = root.querySelector<HTMLElement>('#wm-popover')!;
     const popoverBtn   = root.querySelector<HTMLButtonElement>('#wm-popover-btn')!;
     const popoverCount = popover.querySelector<HTMLElement>('.count')!;
-    const sheet        = root.querySelector<HTMLElement>('#wm-sheet')!;
+    const sheetEl      = root.querySelector<HTMLElement>('#wm-sheet')!;
     const sheetChips   = root.querySelector<HTMLElement>('#wm-sheet-chips')!;
     const sheetCount   = root.querySelector<HTMLElement>('#wm-sheet-count')!;
     const sheetInput   = root.querySelector<HTMLInputElement>('#wm-sheet-input')!;
@@ -122,7 +125,6 @@ export default defineContentScript({
     const savedMsg     = root.querySelector<HTMLElement>('#wm-saved-msg')!;
 
     // ---------- state ----------
-    let state: 'idle' | 'activating' | 'selecting' | 'sheet' = 'idle';
     let samples: { x: number; y: number; t: number }[] = [];
     let lastTrigger = 0;
     let cursorX = 0, cursorY = 0;
@@ -130,7 +132,6 @@ export default defineContentScript({
     let popoverX = 0, popoverY = 0, popoverW = 0, popoverH = 0;
     let lastHighlightEl: Element | null = null;
     let viewportShiftPending = false;
-    const selections: { el: Element; marker: HTMLDivElement; payload: Payload }[] = [];
 
     let currentAnswer = '';
     let currentQuestion = '';
@@ -143,8 +144,8 @@ export default defineContentScript({
       cursorX = e.clientX;
       cursorY = e.clientY;
 
-      if (state === 'activating' || state === 'sheet') return;
-      if (state === 'selecting') schedulePaint();
+      if (picker.mode === 'activating' || picker.mode === 'sheet') return;
+      if (picker.mode === 'selecting') schedulePaint();
 
       const now = performance.now();
       if (now - lastTrigger < opts.cooldownMs) return;
@@ -177,14 +178,14 @@ export default defineContentScript({
       if (reversals >= opts.minReversals && radius <= opts.maxRadius && speed >= opts.minSpeedPxMs) {
         lastTrigger = now;
         samples.length = 0;
-        if (state === 'idle') activate(cursorX, cursorY);
-        else if (state === 'selecting') deactivate();
+        if (picker.mode === 'idle') activate(cursorX, cursorY);
+        else if (picker.mode === 'selecting') deactivate();
       }
     }
 
     // ---------- activation ----------
     function activate(x: number, y: number): void {
-      state = 'activating';
+      picker.mode = 'activating';
       document.body.classList.add('wm-active');
       spawnBurst(x, y);
       paintCursor(x, y);
@@ -192,18 +193,18 @@ export default defineContentScript({
         cursor.classList.add('visible');
         cursor.style.transform = `translate(${x}px, ${y}px) scale(1)`;
       });
-      setTimeout(() => { if (state === 'activating') state = 'selecting'; }, 220);
+      setTimeout(() => { if (picker.mode === 'activating') picker.mode = 'selecting'; }, 220);
     }
 
     function deactivate(): void {
-      state = 'idle';
+      picker.mode = 'idle';
       document.body.classList.remove('wm-active');
       cursor.classList.remove('visible');
       cursor.style.transform = `translate(${cursorX}px, ${cursorY}px) scale(0.4)`;
       highlight.style.opacity = '0';
       popover.classList.remove('visible');
-      for (const sel of selections) sel.marker.remove();
-      selections.length = 0;
+      for (const sel of picker.picks) sel.marker.remove();
+      picker.picks.length = 0;
       samples.length = 0;
       lastHighlightEl = null;
     }
@@ -238,7 +239,7 @@ export default defineContentScript({
       rafPending = true;
       requestAnimationFrame(() => {
         rafPending = false;
-        if (state !== 'selecting') return;
+        if (picker.mode !== 'selecting') return;
         paintCursor(cursorX, cursorY);
         paintHighlight();
         paintPopover();
@@ -277,7 +278,7 @@ export default defineContentScript({
     }
 
     function paintPopover(): void {
-      if (selections.length === 0) return;
+      if (picker.picks.length === 0) return;
       const isOver = cursorX >= popoverX && cursorX <= popoverX + popoverW &&
                      cursorY >= popoverY && cursorY <= popoverY + popoverH;
       if (isOver) return;
@@ -294,19 +295,24 @@ export default defineContentScript({
 
     // ---------- selection ----------
     function togglePick(el: Element): void {
-      const idx = selections.findIndex(s => s.el === el);
+      const idx = picker.picks.findIndex(s => s.el === el);
       if (idx >= 0) {
-        const [removed] = selections.splice(idx, 1);
+        const [removed] = picker.picks.splice(idx, 1);
         removed.marker.remove();
       } else {
         const marker = document.createElement('div');
         marker.className = 'wm-mark';
         document.body.appendChild(marker);
         positionMarker(marker, el);
-        selections.push({ el, marker, payload: getPayload(el) });
+        const payload = getPayload(el);
+        picker.picks.push({
+          id: crypto.randomUUID(),
+          el, marker, payload,
+          label: labelFor(payload),
+        });
       }
-      if (selections.length > 0) {
-        popoverCount.textContent = String(selections.length);
+      if (picker.picks.length > 0) {
+        popoverCount.textContent = String(picker.picks.length);
         popover.classList.add('visible');
         popoverW = popover.offsetWidth;
         popoverH = popover.offsetHeight;
@@ -321,7 +327,7 @@ export default defineContentScript({
     }
 
     function repaintMarkers(): void {
-      for (const sel of selections) positionMarker(sel.marker, sel.el);
+      for (const sel of picker.picks) positionMarker(sel.marker, sel.el);
     }
 
     function getPayload(el: Element): Payload {
@@ -365,14 +371,14 @@ export default defineContentScript({
     }
 
     function commit(): void {
-      if (selections.length === 0) return;
-      const payloads = selections.map(s => s.payload);
+      if (picker.picks.length === 0) return;
+      const payloads = picker.picks.map(p => p.payload);
       showSheet(payloads);
     }
 
     // ---------- sheet ----------
     function showSheet(payloads: Payload[]): void {
-      state = 'sheet';
+      picker.mode = 'sheet';
       cursor.classList.remove('visible');
       highlight.style.opacity = '0';
       popover.classList.remove('visible');
@@ -401,26 +407,26 @@ export default defineContentScript({
       }
       sheetCount.textContent = payloads.length + ' selected';
 
-      requestAnimationFrame(() => sheet.classList.add('visible'));
-      setTimeout(() => sheet.classList.add('expanded'), 380);
+      requestAnimationFrame(() => sheetEl.classList.add('visible'));
+      setTimeout(() => sheetEl.classList.add('expanded'), 380);
       setTimeout(() => sheetInput.focus(), 920);
     }
 
     function closeSheet(): void {
       if (askController) { askController.abort(); askController = null; }
-      sheet.classList.remove('expanded');
+      sheetEl.classList.remove('expanded');
       sheetInput.value = '';
-      setTimeout(() => sheet.classList.remove('visible'), 320);
+      setTimeout(() => sheetEl.classList.remove('visible'), 320);
       setTimeout(() => {
-        for (const sel of selections) sel.marker.remove();
-        selections.length = 0;
+        for (const sel of picker.picks) sel.marker.remove();
+        picker.picks.length = 0;
         document.body.classList.remove('wm-active');
         samples.length = 0;
         lastHighlightEl = null;
         currentSelections = [];
         currentAnswer = '';
         currentQuestion = '';
-        state = 'idle';
+        picker.mode = 'idle';
       }, 700);
     }
 
@@ -782,7 +788,7 @@ export default defineContentScript({
 
     // ---------- misc helpers ----------
     function pick(e: MouseEvent): void {
-      if (state !== 'selecting') return;
+      if (picker.mode !== 'selecting') return;
       const target = e.target as Element;
       if (target.closest && target.closest('#wm-popover')) return;
       e.preventDefault();
@@ -816,38 +822,52 @@ export default defineContentScript({
       return parts.join(' > ');
     }
 
+    // ---------- modules ----------
+    const wiggle  = { onMove: onPointerMove };
+    const overlay = { paintCursor, paintHighlight, spawnBurst, applyRectBox, isOverlayHit, repaintMarkers };
+    const picker  = {
+      mode: 'idle' as Mode,
+      picks: [] as Pick[],
+      activate,
+      deactivate,
+      commit,
+      togglePick,
+      getPayload,
+    };
+    const sheet   = { show: showSheet, close: closeSheet, askAI: submitAsk, save: saveCurrentAnswer, copy: copyCurrentAnswer };
+
     // ---------- bindings ----------
-    document.addEventListener('mousemove', onPointerMove, { passive: true });
+    document.addEventListener('mousemove', wiggle.onMove, { passive: true });
     document.addEventListener('click', pick, true);
     document.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (state === 'sheet') closeSheet();
-        else if (state !== 'idle') deactivate();
+        if (picker.mode === 'sheet') sheet.close();
+        else if (picker.mode !== 'idle') picker.deactivate();
       }
-      if (e.key === 'Enter' && state === 'selecting' && selections.length > 0) commit();
+      if (e.key === 'Enter' && picker.mode === 'selecting' && picker.picks.length > 0) picker.commit();
     });
     popoverBtn.addEventListener('click', (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      commit();
+      picker.commit();
     });
-    sheetClose.addEventListener('click', closeSheet);
-    sheetSend.addEventListener('click', submitAsk);
+    sheetClose.addEventListener('click', sheet.close);
+    sheetSend.addEventListener('click', sheet.askAI);
     sheetInput.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (e.key === 'Enter') { e.preventDefault(); submitAsk(); }
+      if (e.key === 'Enter') { e.preventDefault(); sheet.askAI(); }
     });
-    saveBtn.addEventListener('click', saveCurrentAnswer);
-    copyBtn.addEventListener('click', copyCurrentAnswer);
+    saveBtn.addEventListener('click', sheet.save);
+    copyBtn.addEventListener('click', sheet.copy);
 
     const onViewportShift = () => {
-      if (state !== 'selecting' || viewportShiftPending) return;
+      if (picker.mode !== 'selecting' || viewportShiftPending) return;
       viewportShiftPending = true;
       requestAnimationFrame(() => {
         viewportShiftPending = false;
-        if (state !== 'selecting') return;
-        repaintMarkers();
+        if (picker.mode !== 'selecting') return;
+        overlay.repaintMarkers();
         lastHighlightEl = null;
-        paintHighlight();
+        overlay.paintHighlight();
       });
     };
     window.addEventListener('scroll', onViewportShift, true);
