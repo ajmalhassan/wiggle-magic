@@ -1,6 +1,6 @@
 import './content.css';
 import { renderMarkdownInto } from '@/src/lib/markdown';
-import type { WmSettings } from '@/src/lib/types';
+import type { WmSettings, MemoryEntry } from '@/src/lib/types';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -1027,7 +1027,7 @@ export default defineContentScript({
     // ---------- save / copy ----------
     async function saveCurrentAnswer(): Promise<void> {
       if (!currentAnswer || answerSavedThisRun) return;
-      const entry = {
+      const entry: MemoryEntry = {
         id: crypto.randomUUID(),
         ts: Date.now(),
         url: location.href,
@@ -1035,12 +1035,13 @@ export default defineContentScript({
         hostname: location.hostname,
         question: currentQuestion,
         answer: currentAnswer,
-        selections: currentSelections.map(p => ({
-          tag: p.tag,
-          text: p.text,
-          link: p.link,
-          image: p.image && { src: p.image.src, alt: p.image.alt },
-          selector: p.selector,
+        action: sheetState.activeAction ?? 'ask',
+        selections: picker.picks.map(p => ({
+          tag: p.payload.tag,
+          text: p.payload.text,
+          link: p.payload.link ?? undefined,
+          image: p.payload.image ? { src: p.payload.image.src, alt: p.payload.image.alt } : undefined,
+          selector: p.payload.selector,
         })),
       };
       const { wm_memory = [] } = await chrome.storage.local.get('wm_memory') as { wm_memory?: unknown[] };
