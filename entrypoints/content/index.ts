@@ -40,6 +40,7 @@ export default defineContentScript({
     <div id="wm-edge"></div>
     <div id="wm-ripples"></div>
     <div id="wm-highlight"></div>
+    <div id="wm-tag" aria-hidden="true"></div>
     <div id="wm-cursor"><div class="shape"><div class="grad"></div></div></div>
     <div id="wm-popover">
       <div class="inner">
@@ -107,6 +108,7 @@ export default defineContentScript({
     // no JS reads or writes them, so they're not queried here.
     const cursor       = root.querySelector<HTMLElement>('#wm-cursor')!;
     const highlight    = root.querySelector<HTMLElement>('#wm-highlight')!;
+    const tagBadge     = root.querySelector<HTMLElement>('#wm-tag')!;
     const ripples      = root.querySelector<HTMLElement>('#wm-ripples')!;
     const popover      = root.querySelector<HTMLElement>('#wm-popover')!;
     const popoverBtn   = root.querySelector<HTMLButtonElement>('#wm-popover-btn')!;
@@ -261,20 +263,38 @@ export default defineContentScript({
     }
 
     function paintHighlight(): void {
-      const el = document.elementFromPoint(cursorX, cursorY);
-      if (!el || isOverlayHit(el) || el === document.documentElement || el === document.body) {
+      const leaf = document.elementFromPoint(cursorX, cursorY);
+      if (!leaf || isOverlayHit(leaf) || leaf === document.documentElement || leaf === document.body) {
         if (lastHighlightEl !== null) {
           highlight.style.opacity = '0';
+          tagBadge.style.opacity = '0';
           lastHighlightEl = null;
         }
         return;
       }
-      if (el === lastHighlightEl) return;
-      lastHighlightEl = el;
-      const r = el.getBoundingClientRect();
-      if (r.width < 2 || r.height < 2) { highlight.style.opacity = '0'; return; }
+      const resolved = picker.resolveTarget(leaf);
+      if (resolved === lastHighlightEl) return;
+      lastHighlightEl = resolved;
+
+      const r = resolved.getBoundingClientRect();
+      if (r.width < 2 || r.height < 2) {
+        highlight.style.opacity = '0';
+        tagBadge.style.opacity = '0';
+        return;
+      }
+
       highlight.style.opacity = '1';
       applyRectBox(highlight, r);
+
+      // If this element is already picked, show the filled style; otherwise dashed.
+      const isPicked = picker.picks.some(p => p.el === resolved);
+      highlight.classList.toggle('picked', isPicked);
+
+      // Tag-label badge at top-left of the bbox.
+      const tag = resolved.tagName.toLowerCase();
+      tagBadge.textContent = `<${tag}>`;
+      tagBadge.style.transform = `translate(${r.left}px, ${r.top - 22}px)`;
+      tagBadge.style.opacity = '1';
     }
 
     function paintPopover(): void {
@@ -786,6 +806,26 @@ export default defineContentScript({
       return Object.assign(def, got.wm_settings || {});
     }
 
+    // ---------- semantic ancestor resolution ----------
+    const SEMANTIC_TAGS = new Set([
+      'p', 'li', 'blockquote',
+      'article', 'section', 'figure', 'picture',
+      'img', 'video', 'audio',
+      'table', 'tr', 'th', 'td',
+      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      'a', 'button',
+    ]);
+
+    function resolveTarget(el: Element): Element {
+      let cur: Element | null = el;
+      while (cur && cur !== document.body) {
+        if (SEMANTIC_TAGS.has(cur.tagName.toLowerCase())) return cur;
+        if (cur.parentElement && cur.parentElement.children.length > 30) return cur;
+        cur = cur.parentElement;
+      }
+      return el;
+    }
+
     // ---------- misc helpers ----------
     function pick(e: MouseEvent): void {
       if (picker.mode !== 'selecting') return;
@@ -793,9 +833,10 @@ export default defineContentScript({
       if (target.closest && target.closest('#wm-popover')) return;
       e.preventDefault();
       e.stopPropagation();
-      const el = document.elementFromPoint(e.clientX, e.clientY);
-      if (!el || isOverlayHit(el)) return;
-      togglePick(el);
+      const leaf = document.elementFromPoint(e.clientX, e.clientY);
+      if (!leaf || isOverlayHit(leaf)) return;
+      const resolved = picker.resolveTarget(leaf);
+      picker.togglePick(resolved);
     }
 
     function labelFor(p: Payload): string {
@@ -834,6 +875,7 @@ export default defineContentScript({
       togglePick,
       getPayload,
       pick,
+      resolveTarget,
     };
     const sheet   = { show: showSheet, close: closeSheet, askAI: submitAsk, save: saveCurrentAnswer, copy: copyCurrentAnswer };
 

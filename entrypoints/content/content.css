@@ -142,7 +142,7 @@ body.wm-active #wm-edge { opacity: 1; }
   position: fixed; top: 0; left: 0;
   pointer-events: none;
   border-radius: 8px;
-  border: 1.5px solid rgba(125,249,255,0.9);
+  border: 1.5px dashed rgba(125,249,255,0.9);
   box-shadow:
     0 0 0 1px rgba(125,249,255,0.25),
     0 0 24px rgba(125,249,255,0.35),
@@ -476,3 +476,27 @@ body.wm-active #wm-edge { opacity: 1; }
 #wm-toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 body.wm-active, body.wm-active * { cursor: none !important; }
+
+#wm-highlight.picked {
+  border-style: solid;
+  background: rgba(255, 122, 217, 0.08);
+  border-color: rgba(255, 122, 217, 0.95);
+}
+
+#wm-tag {
+  position: fixed; top: 0; left: 0;
+  pointer-events: none;
+  font: 600 11px/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  color: #0b0d12;
+  background: rgba(125, 249, 255, 0.95);
+  padding: 3px 6px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 120ms ease, transform 90ms ease-out;
+  z-index: 2147483644;
+  white-space: nowrap;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
