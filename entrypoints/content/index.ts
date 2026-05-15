@@ -495,14 +495,31 @@ export default defineContentScript({
 
     function onChipRemoveInSheet(id: string): void {
       picker.remove(id);
-      // If we removed the last pick, the answer is meaningless — close the sheet.
       if (picker.picks.length === 0) {
         sheet.close();
         return;
       }
       renderSheetChips();
       heroCompare.hidden = picker.picks.length < 2;
-      // Task 9 wires sheet.stale = true here when an answer exists.
+
+      // If we already have an answer, mark it stale.
+      if (sheetState.activeAction !== null) {
+        sheetState.stale = true;
+        staleBanner.hidden = false;
+      }
+    }
+
+    function rerun(): void {
+      if (!sheetState.stale || !sheetState.activeAction) return;
+      staleBanner.hidden = true;
+      sheetState.stale = false;
+      if (sheetState.activeAction === 'summary') runSummarize();
+      else if (sheetState.activeAction === 'compare') runCompare();
+      else if (sheetState.activeAction === 'ask') {
+        // Re-ask the same question.
+        sheetInput.value = currentQuestion;
+        submitAsk();
+      }
     }
 
     function showSheet(payloads: Payload[]): void {
@@ -560,6 +577,8 @@ export default defineContentScript({
       currentQuestion = question;
       heroRow().hidden = true;
       sheetState.activeAction = 'ask';
+      sheetState.stale = false;
+      staleBanner.hidden = true;
       currentAnswer = '';
       answerEl.classList.remove('empty');
       answerEl.innerHTML = '<span class="placeholder">Thinking…</span>';
@@ -1120,7 +1139,7 @@ export default defineContentScript({
       pick,
       resolveTarget,
     };
-    const sheet   = { show: showSheet, close: closeSheet, askAI: submitAsk, save: saveCurrentAnswer, copy: copyCurrentAnswer, onChipRemove: onChipRemoveInSheet, runSummarize, runCompare };
+    const sheet   = { show: showSheet, close: closeSheet, askAI: submitAsk, save: saveCurrentAnswer, copy: copyCurrentAnswer, onChipRemove: onChipRemoveInSheet, runSummarize, runCompare, rerun };
 
     // ---------- bindings ----------
     document.addEventListener('mousemove', wiggle.onMove, { passive: true });
@@ -1141,6 +1160,7 @@ export default defineContentScript({
     heroCompare.addEventListener('click', runCompare);
     saveBtn.addEventListener('click', sheet.save);
     copyBtn.addEventListener('click', sheet.copy);
+    rerunBtn.addEventListener('click', rerun);
 
     const onViewportShift = () => {
       if (picker.mode !== 'selecting' || viewportShiftPending) return;
