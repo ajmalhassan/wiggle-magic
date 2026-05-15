@@ -21,6 +21,8 @@ export interface SavedSelection {
   selector?: string;
 }
 
+export type MemoryAction = 'summary' | 'compare' | 'ask';
+
 export interface MemoryEntry {
   id: string;
   ts: number;
@@ -30,4 +32,6 @@ export interface MemoryEntry {
   question: string;
   answer: string;
   selections?: SavedSelection[];
+  /** Which hero action produced this answer. Optional for back-compat with pre-Spec-1 entries. */
+  action?: MemoryAction;
 }
