@@ -527,7 +527,7 @@ export default defineContentScript({
       answerEl.replaceChildren(wrap);
     }
 
-    function classifyError(err: unknown): SheetError {
+    function classifyError(err: unknown, retry?: () => void): SheetError {
       const msg = err instanceof Error ? err.message : String(err);
       if (/Gemini Nano isn't ready.*downloading|downloadable|after-download/i.test(msg)) {
         return {
@@ -557,7 +557,7 @@ export default defineContentScript({
         code: 'stream-failed',
         title: 'The model stopped mid-answer',
         body: msg,
-        primary: { label: 'Try again', onClick: () => sheet.rerun() },
+        primary: { label: 'Try again', onClick: retry ?? (() => sheet.rerun()) },
       };
     }
 
@@ -688,7 +688,9 @@ export default defineContentScript({
       } catch (err) {
         if (err && (err as Error).name === 'AbortError') return;
         console.error('[wiggle-magic] action failed:', err);
-        showError(classifyError(err));
+        sheetState.activeAction = null;
+        heroRowEl.hidden = false;
+        showError(classifyError(err, () => { sheetInput.value = currentQuestion; submitAsk(); }));
       } finally {
         answerEl.classList.remove('streaming');
         askController = null;
@@ -732,7 +734,9 @@ export default defineContentScript({
       } catch (err) {
         if (err && (err as Error).name === 'AbortError') return;
         console.error('[wiggle-magic] action failed:', err);
-        showError(classifyError(err));
+        sheetState.activeAction = null;
+        heroRowEl.hidden = false;
+        showError(classifyError(err, runSummarize));
       } finally {
         answerEl.classList.remove('streaming');
         askController = null;
@@ -778,7 +782,9 @@ export default defineContentScript({
       } catch (err) {
         if (err && (err as Error).name === 'AbortError') return;
         console.error('[wiggle-magic] action failed:', err);
-        showError(classifyError(err));
+        sheetState.activeAction = null;
+        heroRowEl.hidden = false;
+        showError(classifyError(err, runCompare));
       } finally {
         answerEl.classList.remove('streaming');
         askController = null;
@@ -801,7 +807,7 @@ export default defineContentScript({
         const avail = await Summarizer.availability().catch(() => 'unavailable');
         if (avail === 'available' || avail === 'readily') {
           const s = await Summarizer.create({
-            type: 'tl;dr',
+            type: 'tldr',
             format: 'markdown',
             length: 'short',
             expectedInputLanguages: ['en'],

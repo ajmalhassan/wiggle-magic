@@ -536,7 +536,7 @@ body.wm-active, body.wm-active * { cursor: none !important; }
 #wm-sheet .hero-btn#wm-hero-compare:hover { background: rgba(125, 249, 255, 0.18); }
 
 #wm-sheet .stale-banner {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; justify-content: flex-start;
   gap: 12px;
   padding: 8px 12px;
   background: rgba(255, 213, 122, 0.08);
@@ -545,15 +545,18 @@ body.wm-active, body.wm-active * { cursor: none !important; }
   color: #ffd57a;
   font-size: 12px;
 }
+#wm-sheet .stale-banner > span { flex: 1; }
 #wm-sheet .stale-banner button {
   appearance: none;
   background: rgba(255, 213, 122, 0.18);
   border: 1px solid rgba(255, 213, 122, 0.4);
   color: #ffd57a;
   border-radius: 8px;
-  padding: 5px 10px;
+  padding: 7px 14px;
   font: 600 12px inherit;
   cursor: pointer;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 #wm-sheet .stale-banner button:hover { background: rgba(255, 213, 122, 0.28); }
 

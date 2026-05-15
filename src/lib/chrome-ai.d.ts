@@ -64,7 +64,7 @@ declare global {
   const Summarizer: {
     availability(): Promise<AIAvailability>;
     create(opts?: {
-      type?: 'tl;dr' | 'key-points' | 'teaser' | 'headline';
+      type?: 'tldr' | 'key-points' | 'teaser' | 'headline';
       format?: 'plain-text' | 'markdown';
       length?: 'short' | 'medium' | 'long';
       expectedInputLanguages?: string[];
