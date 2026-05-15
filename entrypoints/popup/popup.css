@@ -112,45 +112,6 @@ main.list {
   background: rgba(176,124,255,0.05);
   border-radius: 3px; color: #d6dbe6;
 }
-.row .variants {
-  display: flex; flex-wrap: wrap; gap: 4px;
-  margin: 2px 0 4px;
-}
-.row .variants .chip {
-  appearance: none; background: transparent; border: 1px solid var(--line);
-  color: var(--muted); cursor: pointer;
-  font: 600 10.5px inherit;
-  padding: 2px 8px; border-radius: 999px;
-  text-transform: uppercase; letter-spacing: 0.04em;
-}
-.row .variants .chip:hover { color: var(--fg); border-color: rgba(125,249,255,0.3); }
-.row .variants .chip.active {
-  color: var(--accent-a);
-  background: rgba(125,249,255,0.08);
-  border-color: rgba(125,249,255,0.28);
-}
-.row .actions-row {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
-  margin-top: 2px;
-}
-.row .actions-row .action {
-  appearance: none; background: transparent; border: 1px solid var(--line);
-  color: var(--muted); cursor: pointer;
-  font: 500 11px inherit;
-  padding: 3px 9px; border-radius: 5px;
-}
-.row .actions-row .action:hover:not(:disabled) {
-  color: var(--fg); border-color: rgba(125,249,255,0.3);
-}
-.row .actions-row .action:disabled { opacity: 0.5; cursor: default; }
-.row .actions-row .action.loading {
-  color: var(--accent-a); border-color: rgba(125,249,255,0.3);
-}
-.row .actions-row .action-status {
-  font-size: 10.5px; color: var(--muted);
-  flex: 1 1 100%;
-}
-.row .actions-row .action-status.err { color: var(--accent-c); }
 .row .src {
   font-size: 11px; color: var(--muted);
   margin-top: 2px;
