@@ -511,6 +511,11 @@ export default defineContentScript({
 
     function rerun(): void {
       if (!sheetState.stale || !sheetState.activeAction) return;
+      // Abort any in-flight stream so the new run can take over the answer area.
+      if (askController) {
+        askController.abort();
+        askController = null;
+      }
       staleBanner.hidden = true;
       sheetState.stale = false;
       if (sheetState.activeAction === 'summary') runSummarize();
