@@ -453,9 +453,20 @@ export default defineContentScript({
 
     function commit(): void {
       if (picker.picks.length === 0) return;
+      const totalChars = picker.picks.reduce((acc, p) => acc + (p.payload.text?.length || 0), 0);
+      const BUDGET = 16_000;
+      if (totalChars > BUDGET) {
+        overlay.unmountChipBar();
+        sheet.show(picker.picks.map(p => p.payload));
+        sheet.showError({
+          code: 'selection-too-big',
+          title: 'That selection is too long',
+          body: `We capture up to ~${BUDGET.toLocaleString()} characters across picks (Nano's window); you've picked ~${totalChars.toLocaleString()}. Remove a chip and try again.`,
+        });
+        return;
+      }
       overlay.unmountChipBar();
-      const payloads = picker.picks.map(p => p.payload);
-      sheet.show(payloads);
+      sheet.show(picker.picks.map(p => p.payload));
     }
 
     // ---------- error model ----------
@@ -1242,6 +1253,16 @@ export default defineContentScript({
     document.addEventListener('mousemove', wiggle.onMove, { passive: true });
     document.addEventListener('click', picker.pick, true);
     document.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.altKey && e.shiftKey && (e.key === 'M' || e.key === 'm')) {
+        e.preventDefault();
+        if (picker.mode === 'sheet') {
+          sheet.close();
+          setTimeout(() => picker.activate(cursorX, cursorY), 380);
+        } else if (picker.mode === 'idle') {
+          picker.activate(cursorX, cursorY);
+        }
+        return;
+      }
       if (e.key === 'Escape') {
         if (picker.mode === 'sheet') sheet.close();
         else if (picker.mode !== 'idle') picker.deactivate();
