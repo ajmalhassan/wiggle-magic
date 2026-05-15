@@ -20,6 +20,17 @@ export default defineBackground(() => {
     }
   });
 
+  // Open the options page when the content script requests it.
+  chrome.runtime.onMessage.addListener(
+    (msg: unknown, _sender: chrome.runtime.MessageSender, sendResponse: (r: { ok: boolean }) => void): boolean => {
+      const message = msg as { action?: string } | null;
+      if (message?.action !== 'openOptions') return false;
+      chrome.runtime.openOptionsPage();
+      sendResponse({ ok: true });
+      return false; // synchronous response — no need to keep the channel open
+    },
+  );
+
   // Content scripts in MV3 honor page-CORS, so we fetch images from the service
   // worker (which has host_permissions: <all_urls>) and shuttle back a data URL.
   chrome.runtime.onMessage.addListener(

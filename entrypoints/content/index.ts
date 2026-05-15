@@ -553,7 +553,10 @@ export default defineContentScript({
 
       renderSheetChips();
 
-      requestAnimationFrame(() => sheetEl.classList.add('visible'));
+      requestAnimationFrame(() => {
+        sheetEl.classList.add('visible');
+        refreshBackendPill();
+      });
       setTimeout(() => sheetEl.classList.add('expanded'), 380);
       setTimeout(() => sheetInput.focus(), 920);
     }
@@ -1067,6 +1070,39 @@ export default defineContentScript({
       } catch {}
     }
 
+    // ---------- backend pill ----------
+    async function refreshBackendPill(): Promise<void> {
+      const settings = await loadSettings();
+      let label = 'Nano · on-device';
+      let cloud = false;
+
+      if (settings.backend === 'byok') {
+        label = backendLabelFromProvider(settings.provider);
+        cloud = true;
+      } else if (typeof LanguageModel !== 'undefined') {
+        const avail = await LanguageModel.availability().catch(() => 'unavailable');
+        if (avail !== 'available' && avail !== 'readily') {
+          // Nano not ready; we'll fall back to cloud at run time.
+          label = settings.apiKey ? backendLabelFromProvider(settings.provider) : 'Set up Nano';
+          cloud = !!settings.apiKey;
+        }
+      } else {
+        label = settings.apiKey ? backendLabelFromProvider(settings.provider) : 'Set up Nano';
+        cloud = !!settings.apiKey;
+      }
+
+      backendPill.textContent = label;
+      backendPill.classList.toggle('cloud', cloud);
+      backendPill.hidden = false;
+    }
+
+    function backendLabelFromProvider(provider: string): string {
+      if (provider === 'openai')    return 'OpenAI · cloud';
+      if (provider === 'anthropic') return 'Anthropic · cloud';
+      if (provider === 'gemini')    return 'Gemini · cloud';
+      return `${provider} · cloud`;
+    }
+
     // ---------- settings ----------
     async function loadSettings(): Promise<WmSettings> {
       const def: WmSettings = { backend: 'auto', provider: 'openai', apiKey: '', model: '' };
@@ -1167,6 +1203,9 @@ export default defineContentScript({
     saveBtn.addEventListener('click', sheet.save);
     copyBtn.addEventListener('click', sheet.copy);
     rerunBtn.addEventListener('click', rerun);
+    backendPill.addEventListener('click', () => {
+      chrome.runtime.sendMessage({ action: 'openOptions' }).catch(() => {});
+    });
 
     const onViewportShift = () => {
       if (picker.mode !== 'selecting' || viewportShiftPending) return;
