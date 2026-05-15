@@ -162,7 +162,6 @@ export default defineContentScript({
 
     let currentAnswer = '';
     let currentQuestion = '';
-    let currentSelections: Payload[] = [];
     let askController: AbortController | null = null;
     let answerSavedThisRun = false;
     const sheetState = { activeAction: null as 'summary' | 'compare' | 'ask' | null, stale: false };
@@ -621,7 +620,6 @@ export default defineContentScript({
       cursor.classList.remove('visible');
       highlight.style.opacity = '0';
 
-      currentSelections = payloads;
       currentAnswer = '';
       currentQuestion = '';
       answerSavedThisRun = false;
@@ -661,7 +659,6 @@ export default defineContentScript({
         document.body.classList.remove('wm-active');
         samples.length = 0;
         lastHighlightEl = null;
-        currentSelections = [];
         currentAnswer = '';
         currentQuestion = '';
         picker.mode = 'idle';
@@ -689,7 +686,8 @@ export default defineContentScript({
       askController = new AbortController();
       const textNode = document.createTextNode('');
       try {
-        await askAI(question, currentSelections, askController.signal, (chunk, isFirst) => {
+        const payloads = picker.picks.map(p => p.payload);
+        await askAI(question, payloads, askController.signal, (chunk, isFirst) => {
           if (isFirst) {
             answerEl.replaceChildren(textNode);
             answerEl.classList.add('streaming');
