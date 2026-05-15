@@ -572,3 +572,27 @@ body.wm-active, body.wm-active * { cursor: none !important; }
   background: #7df9ff;
 }
 #wm-sheet .backend-pill.cloud::before { background: #ffd57a; }
+
+#wm-sheet .wm-err {
+  display: flex; flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  background: rgba(255, 158, 199, 0.05);
+  border: 1px solid rgba(255, 158, 199, 0.32);
+  border-radius: 10px;
+  color: #d6dbe6;
+}
+#wm-sheet .wm-err-title { font-weight: 600; color: #ff9ec7; font-size: 13px; }
+#wm-sheet .wm-err-body  { font-size: 12.5px; line-height: 1.5; }
+#wm-sheet .wm-err button {
+  align-self: flex-start;
+  appearance: none;
+  background: rgba(125, 249, 255, 0.12);
+  border: 1px solid rgba(125, 249, 255, 0.28);
+  color: #e7ecf3;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font: 600 12px inherit;
+  cursor: pointer;
+}
+#wm-sheet .wm-err button:hover { background: rgba(125, 249, 255, 0.2); }

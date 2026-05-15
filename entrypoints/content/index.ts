@@ -458,6 +458,73 @@ export default defineContentScript({
       sheet.show(payloads);
     }
 
+    // ---------- error model ----------
+    type ErrorCode =
+      | 'nano-unavailable'
+      | 'nano-downloading'
+      | 'byok-no-key'
+      | 'stream-failed'
+      | 'selection-too-big'
+      | 'page-blocked';
+
+    interface SheetError {
+      code: ErrorCode;
+      title: string;
+      body: string;
+      primary?: { label: string; onClick: () => void };
+    }
+
+    function showError(err: SheetError): void {
+      const wrap = document.createElement('div');
+      wrap.className = 'wm-err';
+      const t = document.createElement('div'); t.className = 'wm-err-title'; t.textContent = err.title;
+      const b = document.createElement('div'); b.className = 'wm-err-body';  b.textContent = err.body;
+      wrap.append(t, b);
+      if (err.primary) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = err.primary.label;
+        btn.addEventListener('click', err.primary.onClick);
+        wrap.appendChild(btn);
+      }
+      answerEl.classList.remove('empty');
+      answerEl.replaceChildren(wrap);
+    }
+
+    function classifyError(err: unknown): SheetError {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/Gemini Nano isn't ready.*downloading|downloadable|after-download/i.test(msg)) {
+        return {
+          code: 'nano-downloading',
+          title: 'Model still downloading',
+          body: 'Gemini Nano is still downloading. Try again in a moment, or set a BYOK key in Options to use cloud instead.',
+          primary: { label: 'Open options', onClick: () => chrome.runtime.sendMessage({ action: 'openOptions' }).catch(() => {}) },
+        };
+      }
+      if (/Gemini Nano isn't ready/i.test(msg)) {
+        return {
+          code: 'nano-unavailable',
+          title: "On-device AI isn't ready",
+          body: 'Gemini Nano needs Chrome 138+ and a one-time model download.',
+          primary: { label: 'Set up Nano', onClick: () => chrome.runtime.sendMessage({ action: 'openOptions' }).catch(() => {}) },
+        };
+      }
+      if (/No API key configured/i.test(msg)) {
+        return {
+          code: 'byok-no-key',
+          title: 'Add an API key to use cloud',
+          body: 'You picked a cloud provider but no key is saved.',
+          primary: { label: 'Add key', onClick: () => chrome.runtime.sendMessage({ action: 'openOptions' }).catch(() => {}) },
+        };
+      }
+      return {
+        code: 'stream-failed',
+        title: 'The model stopped mid-answer',
+        body: msg,
+        primary: { label: 'Try again', onClick: () => sheet.rerun() },
+      };
+    }
+
     // ---------- sheet ----------
     function heroRow(): HTMLElement { return root.querySelector<HTMLElement>('#wm-hero')!; }
 
@@ -614,14 +681,8 @@ export default defineContentScript({
         actionsEl.classList.add('show');
       } catch (err) {
         if (err && (err as Error).name === 'AbortError') return;
-        console.error('[wiggle-magic] askAI failed:', err);
-        const errSpan = document.createElement('span');
-        errSpan.className = 'err';
-        const msg = (err as Error)?.message || String(err);
-        errSpan.textContent = /Extension context invalidated/i.test(msg)
-          ? 'Wiggle Magic was updated. Reload this tab to continue.'
-          : msg;
-        answerEl.replaceChildren(errSpan);
+        console.error('[wiggle-magic] action failed:', err);
+        showError(classifyError(err));
       } finally {
         answerEl.classList.remove('streaming');
         askController = null;
@@ -663,11 +724,8 @@ export default defineContentScript({
         actionsEl.classList.add('show');
       } catch (err) {
         if (err && (err as Error).name === 'AbortError') return;
-        console.error('[wiggle-magic] summarize failed:', err);
-        const errSpan = document.createElement('span');
-        errSpan.className = 'err';
-        errSpan.textContent = (err as Error)?.message || String(err);
-        answerEl.replaceChildren(errSpan);
+        console.error('[wiggle-magic] action failed:', err);
+        showError(classifyError(err));
       } finally {
         answerEl.classList.remove('streaming');
         askController = null;
@@ -711,11 +769,8 @@ export default defineContentScript({
         actionsEl.classList.add('show');
       } catch (err) {
         if (err && (err as Error).name === 'AbortError') return;
-        console.error('[wiggle-magic] compare failed:', err);
-        const errSpan = document.createElement('span');
-        errSpan.className = 'err';
-        errSpan.textContent = (err as Error)?.message || String(err);
-        answerEl.replaceChildren(errSpan);
+        console.error('[wiggle-magic] action failed:', err);
+        showError(classifyError(err));
       } finally {
         answerEl.classList.remove('streaming');
         askController = null;
@@ -1181,7 +1236,7 @@ export default defineContentScript({
       pick,
       resolveTarget,
     };
-    const sheet   = { show: showSheet, close: closeSheet, askAI: submitAsk, save: saveCurrentAnswer, copy: copyCurrentAnswer, onChipRemove: onChipRemoveInSheet, runSummarize, runCompare, rerun };
+    const sheet   = { show: showSheet, close: closeSheet, askAI: submitAsk, save: saveCurrentAnswer, copy: copyCurrentAnswer, onChipRemove: onChipRemoveInSheet, runSummarize, runCompare, rerun, showError };
 
     // ---------- bindings ----------
     document.addEventListener('mousemove', wiggle.onMove, { passive: true });
