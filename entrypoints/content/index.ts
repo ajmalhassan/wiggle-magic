@@ -501,6 +501,7 @@ export default defineContentScript({
         return;
       }
       renderSheetChips();
+      heroCompare.hidden = picker.picks.length < 2;
       // Task 9 wires sheet.stale = true here when an answer exists.
     }
 
@@ -636,6 +637,54 @@ export default defineContentScript({
       } catch (err) {
         if (err && (err as Error).name === 'AbortError') return;
         console.error('[wiggle-magic] summarize failed:', err);
+        const errSpan = document.createElement('span');
+        errSpan.className = 'err';
+        errSpan.textContent = (err as Error)?.message || String(err);
+        answerEl.replaceChildren(errSpan);
+      } finally {
+        answerEl.classList.remove('streaming');
+        askController = null;
+      }
+    }
+
+    async function runCompare(): Promise<void> {
+      if (picker.picks.length < 2 || askController) return;
+      heroRow().hidden = true;
+      sheetState.activeAction = 'compare';
+      sheetState.stale = false;
+      staleBanner.hidden = true;
+
+      currentQuestion = 'Compare selections';
+      currentAnswer = '';
+      answerEl.classList.remove('empty');
+      answerEl.innerHTML = '<span class="placeholder">Comparing…</span>';
+      actionsEl.classList.remove('show');
+      savedMsg.style.display = 'none';
+      answerSavedThisRun = false;
+
+      askController = new AbortController();
+      const textNode = document.createTextNode('');
+      try {
+        const payloads = picker.picks.map(p => p.payload);
+        await askAI(
+          `Compare these ${payloads.length} selections. Use a short Markdown table when the items are clearly comparable; otherwise contrast them in concise bullets. Lead with the biggest differences.`,
+          payloads,
+          askController.signal,
+          (chunk, isFirst) => {
+            if (isFirst) {
+              answerEl.replaceChildren(textNode);
+              answerEl.classList.add('streaming');
+            }
+            textNode.appendData(chunk);
+            currentAnswer += chunk;
+            answerEl.scrollTop = answerEl.scrollHeight;
+          },
+        );
+        renderMarkdownInto(answerEl, currentAnswer);
+        actionsEl.classList.add('show');
+      } catch (err) {
+        if (err && (err as Error).name === 'AbortError') return;
+        console.error('[wiggle-magic] compare failed:', err);
         const errSpan = document.createElement('span');
         errSpan.className = 'err';
         errSpan.textContent = (err as Error)?.message || String(err);
@@ -1071,7 +1120,7 @@ export default defineContentScript({
       pick,
       resolveTarget,
     };
-    const sheet   = { show: showSheet, close: closeSheet, askAI: submitAsk, save: saveCurrentAnswer, copy: copyCurrentAnswer, onChipRemove: onChipRemoveInSheet, runSummarize };
+    const sheet   = { show: showSheet, close: closeSheet, askAI: submitAsk, save: saveCurrentAnswer, copy: copyCurrentAnswer, onChipRemove: onChipRemoveInSheet, runSummarize, runCompare };
 
     // ---------- bindings ----------
     document.addEventListener('mousemove', wiggle.onMove, { passive: true });
@@ -1089,6 +1138,7 @@ export default defineContentScript({
       if (e.key === 'Enter') { e.preventDefault(); sheet.askAI(); }
     });
     heroSummary.addEventListener('click', runSummarize);
+    heroCompare.addEventListener('click', runCompare);
     saveBtn.addEventListener('click', sheet.save);
     copyBtn.addEventListener('click', sheet.copy);
 
