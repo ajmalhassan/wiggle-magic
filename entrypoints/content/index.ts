@@ -42,16 +42,16 @@ export default defineContentScript({
     <div id="wm-highlight"></div>
     <div id="wm-tag" aria-hidden="true"></div>
     <div id="wm-cursor"><div class="shape"><div class="grad"></div></div></div>
-    <div id="wm-popover">
-      <div class="inner">
-        <button id="wm-popover-btn" type="button">
-          <svg class="sparkle" viewBox="-3 -3 6 6" aria-hidden="true">
-            <polygon points="0,-2.6 0.7,-0.7 2.6,0 0.7,0.7 0,2.6 -0.7,0.7 -2.6,0 -0.7,-0.7" fill="#0b0d12"/>
-          </svg>
-          <span>Magic</span>
-          <span class="kbd" aria-label="press Enter to commit">⏎</span>
-          <span class="count" aria-label="selected items">0</span>
-        </button>
+    <div id="wm-chipbar" role="toolbar" aria-label="Selected items">
+      <div class="left">
+        <svg class="sparkle" viewBox="-3 -3 6 6" aria-hidden="true">
+          <polygon points="0,-2.6 0.7,-0.7 2.6,0 0.7,0.7 0,2.6 -0.7,0.7 -2.6,0 -0.7,-0.7" fill="#0b0d12"/>
+        </svg>
+        <span class="count" id="wm-chipbar-count">0 picked</span>
+      </div>
+      <div class="chips" id="wm-chipbar-chips"></div>
+      <div class="right">
+        <span class="hint">Press <kbd>⏎</kbd> for Magic</span>
       </div>
     </div>
     <div id="wm-sheet" role="dialog" aria-label="Magic">
@@ -110,9 +110,9 @@ export default defineContentScript({
     const highlight    = root.querySelector<HTMLElement>('#wm-highlight')!;
     const tagBadge     = root.querySelector<HTMLElement>('#wm-tag')!;
     const ripples      = root.querySelector<HTMLElement>('#wm-ripples')!;
-    const popover      = root.querySelector<HTMLElement>('#wm-popover')!;
-    const popoverBtn   = root.querySelector<HTMLButtonElement>('#wm-popover-btn')!;
-    const popoverCount = popover.querySelector<HTMLElement>('.count')!;
+    const chipbar      = root.querySelector<HTMLElement>('#wm-chipbar')!;
+    const chipbarCount = root.querySelector<HTMLElement>('#wm-chipbar-count')!;
+    const chipbarChips = root.querySelector<HTMLElement>('#wm-chipbar-chips')!;
     const sheetEl      = root.querySelector<HTMLElement>('#wm-sheet')!;
     const sheetChips   = root.querySelector<HTMLElement>('#wm-sheet-chips')!;
     const sheetCount   = root.querySelector<HTMLElement>('#wm-sheet-count')!;
@@ -131,7 +131,6 @@ export default defineContentScript({
     let lastTrigger = 0;
     let cursorX = 0, cursorY = 0;
     let rafPending = false;
-    let popoverX = 0, popoverY = 0, popoverW = 0, popoverH = 0;
     let lastHighlightEl: Element | null = null;
     let viewportShiftPending = false;
 
@@ -205,7 +204,7 @@ export default defineContentScript({
       cursor.style.transform = `translate(${cursorX}px, ${cursorY}px) scale(0.4)`;
       highlight.style.opacity = '0';
       tagBadge.style.opacity = '0';
-      popover.classList.remove('visible');
+      overlay.unmountChipBar();
       for (const sel of picker.picks) sel.marker.remove();
       picker.picks.length = 0;
       samples.length = 0;
@@ -245,7 +244,6 @@ export default defineContentScript({
         if (picker.mode !== 'selecting') return;
         paintCursor(cursorX, cursorY);
         paintHighlight();
-        paintPopover();
       });
     }
 
@@ -298,49 +296,93 @@ export default defineContentScript({
       tagBadge.style.opacity = '1';
     }
 
-    function paintPopover(): void {
-      if (picker.picks.length === 0) return;
-      const isOver = cursorX >= popoverX && cursorX <= popoverX + popoverW &&
-                     cursorY >= popoverY && cursorY <= popoverY + popoverH;
-      if (isOver) return;
-      const OFFX = 24, OFFY = 14;
-      let px = cursorX + OFFX;
-      let py = cursorY + OFFY;
-      if (px + popoverW > window.innerWidth  - 10) px = cursorX - popoverW - 12;
-      if (py + popoverH > window.innerHeight - 10) py = cursorY - popoverH - 14;
-      if (px < 10) px = 10;
-      if (py < 10) py = 10;
-      popoverX = px; popoverY = py;
-      popover.style.transform = `translate(${px}px, ${py}px)`;
+    // ---------- chip bar ----------
+    function mountChipBar(): void {
+      chipbar.classList.add('visible');
+      renderChipBar();
+    }
+
+    function unmountChipBar(): void {
+      chipbar.classList.remove('visible');
+    }
+
+    function renderChipBar(): void {
+      chipbarCount.textContent = `${picker.picks.length} picked`;
+      chipbarChips.innerHTML = '';
+      for (const p of picker.picks) {
+        const chip = document.createElement('div');
+        chip.className = 'wm-chip';
+        chip.dataset.pickId = p.id;
+        chip.title = p.label;
+
+        const icon = document.createElement('span');
+        icon.className = 'icon';
+        icon.textContent = chipIconFor(p);
+
+        const label = document.createElement('span');
+        label.className = 'label';
+        label.textContent = truncate(p.label, 24);
+
+        const close = document.createElement('button');
+        close.className = 'close';
+        close.type = 'button';
+        close.setAttribute('aria-label', 'Remove pick');
+        close.textContent = '×';
+        close.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          picker.remove(p.id);
+        });
+
+        chip.append(icon, label, close);
+        chipbarChips.appendChild(chip);
+      }
+    }
+
+    function chipIconFor(p: Pick): string {
+      if (p.payload.image) return '🖼';
+      if (p.payload.link)  return '🔗';
+      if (p.payload.tag === 'button' || p.payload.tag === 'a') return '→';
+      return '¶';
     }
 
     // ---------- selection ----------
+    function pickerAdd(el: Element): void {
+      const marker = document.createElement('div');
+      marker.className = 'wm-mark';
+      document.body.appendChild(marker);
+      applyRectBox(marker, el.getBoundingClientRect());
+      const payload = getPayload(el);
+      picker.picks.push({
+        id: crypto.randomUUID(),
+        el, marker, payload,
+        label: labelFor(payload),
+      });
+    }
+
+    function pickerRemove(id: string): void {
+      const idx = picker.picks.findIndex(p => p.id === id);
+      if (idx < 0) return;
+      const [removed] = picker.picks.splice(idx, 1);
+      removed.marker.remove();
+      afterPicksChanged();
+    }
+
     function togglePick(el: Element): void {
-      const idx = picker.picks.findIndex(s => s.el === el);
-      if (idx >= 0) {
-        const [removed] = picker.picks.splice(idx, 1);
-        removed.marker.remove();
-      } else {
-        const marker = document.createElement('div');
-        marker.className = 'wm-mark';
-        document.body.appendChild(marker);
-        positionMarker(marker, el);
-        const payload = getPayload(el);
-        picker.picks.push({
-          id: crypto.randomUUID(),
-          el, marker, payload,
-          label: labelFor(payload),
-        });
+      const existing = picker.picks.findIndex(p => p.el === el);
+      if (existing >= 0) {
+        pickerRemove(picker.picks[existing].id);
+        return;
       }
-      if (picker.picks.length > 0) {
-        popoverCount.textContent = String(picker.picks.length);
-        popover.classList.add('visible');
-        popoverW = popover.offsetWidth;
-        popoverH = popover.offsetHeight;
-        paintPopover();
-      } else {
-        popover.classList.remove('visible');
-      }
+      pickerAdd(el);
+      afterPicksChanged();
+    }
+
+    function afterPicksChanged(): void {
+      if (picker.picks.length > 0) overlay.mountChipBar();
+      else overlay.unmountChipBar();
+      // Repaint so the dashed/filled state of the currently-hovered element updates.
+      lastHighlightEl = null;
     }
 
     function positionMarker(marker: HTMLElement, el: Element): void {
@@ -393,8 +435,9 @@ export default defineContentScript({
 
     function commit(): void {
       if (picker.picks.length === 0) return;
+      overlay.unmountChipBar();
       const payloads = picker.picks.map(p => p.payload);
-      showSheet(payloads);
+      sheet.show(payloads);
     }
 
     // ---------- sheet ----------
@@ -402,7 +445,6 @@ export default defineContentScript({
       picker.mode = 'sheet';
       cursor.classList.remove('visible');
       highlight.style.opacity = '0';
-      popover.classList.remove('visible');
 
       currentSelections = payloads;
       currentAnswer = '';
@@ -830,8 +872,6 @@ export default defineContentScript({
     // ---------- misc helpers ----------
     function pick(e: MouseEvent): void {
       if (picker.mode !== 'selecting') return;
-      const target = e.target as Element;
-      if (target.closest && target.closest('#wm-popover')) return;
       e.preventDefault();
       e.stopPropagation();
       const leaf = document.elementFromPoint(e.clientX, e.clientY);
@@ -866,7 +906,7 @@ export default defineContentScript({
 
     // ---------- modules ----------
     const wiggle  = { onMove: onPointerMove };
-    const overlay = { paintCursor, paintHighlight, spawnBurst, applyRectBox, isOverlayHit, repaintMarkers };
+    const overlay = { paintCursor, paintHighlight, spawnBurst, applyRectBox, isOverlayHit, repaintMarkers, mountChipBar, unmountChipBar, renderChipBar };
     const picker  = {
       mode: 'idle' as Mode,
       picks: [] as Pick[],
@@ -874,6 +914,8 @@ export default defineContentScript({
       deactivate,
       commit,
       togglePick,
+      add: pickerAdd,
+      remove: pickerRemove,
       getPayload,
       pick,
       resolveTarget,
@@ -889,11 +931,6 @@ export default defineContentScript({
         else if (picker.mode !== 'idle') picker.deactivate();
       }
       if (e.key === 'Enter' && picker.mode === 'selecting' && picker.picks.length > 0) picker.commit();
-    });
-    popoverBtn.addEventListener('click', (e: MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      picker.commit();
     });
     sheetClose.addEventListener('click', sheet.close);
     sheetSend.addEventListener('click', sheet.askAI);
