@@ -603,6 +603,95 @@ export default defineContentScript({
       }
     }
 
+    async function runSummarize(): Promise<void> {
+      if (picker.picks.length === 0 || askController) return;
+      heroRow().hidden = true;
+      sheetState.activeAction = 'summary';
+      sheetState.stale = false;
+      staleBanner.hidden = true;
+
+      currentQuestion = 'Summarize selection';
+      currentAnswer = '';
+      answerEl.classList.remove('empty');
+      answerEl.innerHTML = '<span class="placeholder">Summarizing…</span>';
+      actionsEl.classList.remove('show');
+      savedMsg.style.display = 'none';
+      answerSavedThisRun = false;
+
+      askController = new AbortController();
+      const textNode = document.createTextNode('');
+      try {
+        const payloads = picker.picks.map(p => p.payload);
+        await summarizePicks(payloads, askController.signal, (chunk, isFirst) => {
+          if (isFirst) {
+            answerEl.replaceChildren(textNode);
+            answerEl.classList.add('streaming');
+          }
+          textNode.appendData(chunk);
+          currentAnswer += chunk;
+          answerEl.scrollTop = answerEl.scrollHeight;
+        });
+        renderMarkdownInto(answerEl, currentAnswer);
+        actionsEl.classList.add('show');
+      } catch (err) {
+        if (err && (err as Error).name === 'AbortError') return;
+        console.error('[wiggle-magic] summarize failed:', err);
+        const errSpan = document.createElement('span');
+        errSpan.className = 'err';
+        errSpan.textContent = (err as Error)?.message || String(err);
+        answerEl.replaceChildren(errSpan);
+      } finally {
+        answerEl.classList.remove('streaming');
+        askController = null;
+      }
+    }
+
+    async function summarizePicks(
+      payloads: Payload[],
+      signal: AbortSignal,
+      onChunk: (chunk: string, isFirst: boolean) => void,
+    ): Promise<void> {
+      const sourceText = payloads.map((p, i) => {
+        const head = `[${i + 1}] <${p.tag}>`;
+        const body = p.text || p.image?.alt || p.link?.text || '';
+        return `${head}\n${body}`;
+      }).join('\n\n');
+
+      // Try the Summarizer API first (Nano-only, on-device).
+      if ('Summarizer' in self) {
+        const avail = await Summarizer.availability().catch(() => 'unavailable');
+        if (avail === 'available' || avail === 'readily') {
+          const s = await Summarizer.create({
+            type: 'tl;dr',
+            format: 'markdown',
+            length: 'short',
+            expectedInputLanguages: ['en'],
+            outputLanguage: 'en',
+          });
+          let first = true;
+          try {
+            const stream = s.summarizeStreaming(sourceText);
+            for await (const chunk of stream) {
+              if (signal.aborted) throw new DOMException('aborted', 'AbortError');
+              onChunk(chunk, first);
+              first = false;
+            }
+            return;
+          } finally {
+            s.destroy?.();
+          }
+        }
+      }
+
+      // Fallback: route through existing askAI with a summarize prompt.
+      await askAI(
+        'Summarize these selections in 3-5 short bullets. Be concrete and skim-friendly.',
+        payloads,
+        signal,
+        onChunk,
+      );
+    }
+
     // ---------- AI: Nano first, BYOK fallback ----------
     async function askAI(
       question: string,
@@ -982,7 +1071,7 @@ export default defineContentScript({
       pick,
       resolveTarget,
     };
-    const sheet   = { show: showSheet, close: closeSheet, askAI: submitAsk, save: saveCurrentAnswer, copy: copyCurrentAnswer, onChipRemove: onChipRemoveInSheet };
+    const sheet   = { show: showSheet, close: closeSheet, askAI: submitAsk, save: saveCurrentAnswer, copy: copyCurrentAnswer, onChipRemove: onChipRemoveInSheet, runSummarize };
 
     // ---------- bindings ----------
     document.addEventListener('mousemove', wiggle.onMove, { passive: true });
@@ -999,6 +1088,7 @@ export default defineContentScript({
     sheetInput.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Enter') { e.preventDefault(); sheet.askAI(); }
     });
+    heroSummary.addEventListener('click', runSummarize);
     saveBtn.addEventListener('click', sheet.save);
     copyBtn.addEventListener('click', sheet.copy);
 
