@@ -204,6 +204,7 @@ export default defineContentScript({
       cursor.classList.remove('visible');
       cursor.style.transform = `translate(${cursorX}px, ${cursorY}px) scale(0.4)`;
       highlight.style.opacity = '0';
+      tagBadge.style.opacity = '0';
       popover.classList.remove('visible');
       for (const sel of picker.picks) sel.marker.remove();
       picker.picks.length = 0;
