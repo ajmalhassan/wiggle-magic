@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <title>Wiggle Magic — Settings</title>
+<link rel="stylesheet" href="./actions.css">
 <style>
   :root { --bg: #0b0d12; --fg: #e7ecf3; --muted: #8a93a6; --line: #222838; --accent-a: #7df9ff; }
   * { box-sizing: border-box; }
@@ -199,6 +200,12 @@
 </head>
 <body>
 <div class="wrap">
+  <nav class="options-tabs">
+    <button class="options-tab active" data-tab="models" type="button">Models</button>
+    <button class="options-tab" data-tab="actions" type="button">Actions</button>
+  </nav>
+
+  <section class="tab" data-tab="models">
   <div class="page-head">
     <div>
       <h1>Wiggle Magic</h1>
@@ -308,6 +315,27 @@
     <button id="save">Save</button>
     <span class="saved" id="saved">Saved ✓</span>
   </div>
+  </section>
+
+  <section class="tab" data-tab="actions" hidden>
+    <h2>Magic Actions</h2>
+    <div class="actions-sections">
+      <section class="actions-builtin">
+        <h3>Built-in core</h3>
+        <ul id="builtin-core-list"></ul>
+      </section>
+      <section class="actions-library">
+        <h3>Library</h3>
+        <p class="hint">Curated prompts. One tap to enable.</p>
+        <ul id="library-list"></ul>
+      </section>
+      <section class="actions-order">
+        <h3>Hero order</h3>
+        <p class="hint">Use ↑ / ↓ to reorder.</p>
+        <ol id="hero-order-list"></ol>
+      </section>
+    </div>
+  </section>
 </div>
 <script type="module" src="./main.ts"></script>
 </body>

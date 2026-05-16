@@ -1,15 +1,26 @@
 // src/lib/actions/api-route.ts
 import type { ApiPref } from '../types/action';
+import type { BuiltPrompt } from './prompt-builder';
+
+export interface AnswerStream {
+  chunks(): AsyncIterable<string>;
+  abort(): void;
+}
 
 /**
  * Minimal adapter shape: enough for the registry/router to introspect.
- * The actual `run` method is added in Plan 2 when real Chrome AI / BYOK
- * adapters are wired. Keeping this lean here means the registry can be
- * tested without pulling in AI implementations.
+ * `run` is optional so tests/registry construction don't need it; the content
+ * script's orchestrator requires it at call time.
  */
 export interface ApiAdapter {
   name: ApiPref;
   available(): boolean;
+  /**
+   * Execute the adapter against a prompt. Returns an AnswerStream. Optional
+   * because tests/registry construction don't need it; the content script's
+   * orchestrator requires it at call time.
+   */
+  run?(prompt: BuiltPrompt, signal: AbortSignal): Promise<AnswerStream>;
 }
 
 export type AdapterMap = Record<ApiPref, ApiAdapter>;

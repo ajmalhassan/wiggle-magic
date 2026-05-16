@@ -3,9 +3,9 @@ import { resolve } from 'path';
 
 export default defineConfig({
   test: {
-    environment: 'node',
+    environment: 'node',     // default; per-file pragma `// @vitest-environment jsdom` opts in
     globals: false,
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'entrypoints/**/*.test.ts'],
   },
   resolve: {
     alias: {

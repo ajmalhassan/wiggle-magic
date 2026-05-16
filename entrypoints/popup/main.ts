@@ -1,6 +1,9 @@
 import './popup.css';
 import { renderMarkdownInto } from '@/src/lib/markdown';
 import type { MemoryEntry } from '@/src/lib/types';
+import { chromeKV } from '@/src/lib/storage';
+
+const kv = chromeKV();
 
 const listEl    = document.getElementById('list')!;
 const emptyEl   = document.getElementById('empty')!;
@@ -13,8 +16,7 @@ const rowTpl    = document.getElementById('row-tpl') as HTMLTemplateElement;
 settings.addEventListener('click', () => chrome.runtime.openOptionsPage());
 
 async function render(): Promise<void> {
-  const got = await chrome.storage.local.get('wm_memory') as { wm_memory?: MemoryEntry[] };
-  const wm_memory = got.wm_memory ?? [];
+  const wm_memory = (await kv.get<MemoryEntry[]>('wm_memory')) ?? [];
   listEl.innerHTML = '';
   for (const entry of wm_memory) listEl.appendChild(renderRow(entry));
   refreshChrome();
@@ -78,21 +80,19 @@ function relTime(ts: number): string {
 }
 
 async function deleteEntry(id: string): Promise<void> {
-  const got = await chrome.storage.local.get('wm_memory') as { wm_memory?: MemoryEntry[] };
-  const wm_memory = got.wm_memory ?? [];
+  const wm_memory = (await kv.get<MemoryEntry[]>('wm_memory')) ?? [];
   const next = wm_memory.filter(e => e.id !== id);
-  await chrome.storage.local.set({ wm_memory: next });
+  await kv.set('wm_memory', next);
 }
 
 clearBtn.addEventListener('click', async () => {
   if (!confirm('Clear all saved answers? This cannot be undone.')) return;
-  await chrome.storage.local.set({ wm_memory: [] });
+  await kv.set('wm_memory', []);
   render();
 });
 
 exportBtn.addEventListener('click', async () => {
-  const got = await chrome.storage.local.get('wm_memory') as { wm_memory?: MemoryEntry[] };
-  const wm_memory = got.wm_memory ?? [];
+  const wm_memory = (await kv.get<MemoryEntry[]>('wm_memory')) ?? [];
   const md = toMarkdown(wm_memory);
   const blob = new Blob([md], { type: 'text/markdown' });
   const url = URL.createObjectURL(blob);

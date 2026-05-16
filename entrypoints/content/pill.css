@@ -1,0 +1,70 @@
+/* entrypoints/content/pill.css */
+#wm-pill {
+  position: fixed;
+  left: 50%;
+  bottom: 36px;
+  transform: translate(-50%, calc(100vh + 80px));
+  z-index: 2147483646;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  height: 40px;
+  background: rgba(20, 24, 35, 0.94);
+  border-radius: 999px;
+  color: #e7ecf3;
+  font: 13px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  backdrop-filter: blur(12px) saturate(1.05);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(125,249,255,0.18);
+  opacity: 0;
+  transition: transform 540ms cubic-bezier(0.18, 1.25, 0.4, 1), opacity 280ms ease;
+}
+#wm-pill.visible { transform: translate(-50%, 0); opacity: 1; }
+
+#wm-pill .pill-left { display: flex; align-items: center; gap: 8px; }
+#wm-pill .sparkle { width: 14px; height: 14px; fill: #7df9ff; }
+#wm-pill .count { font-weight: 600; }
+
+#wm-pill .pill-chips {
+  display: flex;
+  gap: 6px;
+  max-width: 60vw;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+#wm-pill .pill-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(125, 249, 255, 0.10);
+  border: 1px solid rgba(125, 249, 255, 0.20);
+  border-radius: 999px;
+  color: #e7ecf3;
+  font: inherit;
+  cursor: default;
+  white-space: nowrap;
+  max-width: 200px;
+}
+#wm-pill .pill-chip .chip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+#wm-pill .pill-chip .chip-x {
+  cursor: pointer;
+  opacity: 0.6;
+  padding: 0 2px;
+}
+#wm-pill .pill-chip .chip-x:hover { opacity: 1; }
+
+#wm-pill .hint { opacity: 0.7; font-size: 12px; }
+#wm-pill .hint kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 11px;
+}
