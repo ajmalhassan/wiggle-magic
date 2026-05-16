@@ -41,6 +41,12 @@ export default defineContentScript({
     const adapters = buildAdapterMap();
     const state = createState();
 
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'sync' && changes['wm_settings']) {
+        cachedSettings = null;
+      }
+    });
+
     const cursorUrl = chrome.runtime.getURL('cursor.svg');
     const overlay = createOverlay(root, cursorUrl);
     overlay.mount();
@@ -129,6 +135,8 @@ export default defineContentScript({
       rafScheduled = true;
       requestAnimationFrame(() => {
         rafScheduled = false;
+        const mode = state.getMode();
+        if (mode !== 'selecting' && mode !== 'sidebar+selecting') return;
         overlay.setCursor(cursorX, cursorY, true);
         overlay.setHighlight(pendingHighlight, pendingHighlightPicked);
         overlay.setTag(pendingTagRect, pendingTagName);
@@ -380,6 +388,8 @@ export default defineContentScript({
       if (state.getMode() !== 'sidebar+selecting') return;
       composer.setPicks([...composer.getStagedPicks(), ...stagingPicks]);
       stagingPicks = [];
+      pickedElements.clear();
+      pickElementsById.clear();
       pill.unmount();
       overlay.setCursor(cursorX, cursorY, false);
       overlay.setHighlight(null, false);
@@ -453,6 +463,11 @@ export default defineContentScript({
         pickElementsById.set(newPick.id, resolved);
       }
       pill.setPicks(stagingPicks);
+
+      // Refresh the highlight's picked-state immediately so clicking
+      // without moving the cursor swaps dashed↔solid in the same frame.
+      pendingHighlightPicked = pickedElements.has(resolved);
+      schedulePaint();
     }, { capture: true });
 
     document.addEventListener('keydown', (e) => {
@@ -468,6 +483,8 @@ export default defineContentScript({
         else if (mode === 'sidebar+selecting') {
           e.preventDefault();
           stagingPicks = [];
+          pickedElements.clear();
+          pickElementsById.clear();
           lastHover = null;
           pill.unmount();
           overlay.setCursor(cursorX, cursorY, false);
