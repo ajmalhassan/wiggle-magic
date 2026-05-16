@@ -10,7 +10,7 @@ export interface PromptInputs {
   question: string | undefined;
   pageMeta: PageMeta;
   modifiers: string[];
-  url?: string;                     // optional; falls back to pageMeta.host if absent
+  url?: string;                     // optional; falls back to empty string if absent
   modifierAddenda?: Record<string, string>;
 }
 
