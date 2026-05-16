@@ -1,0 +1,131 @@
+/* entrypoints/content/overlay.css */
+/* Overlay chrome: edge aurora, custom cursor, highlight box, ripples, tag badge. */
+/* Copied verbatim from content.css — Task 18 will remove the originals. */
+
+/* Aurora glow at the viewport edges. */
+#wm-edge {
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 2147483640;
+  opacity: 0;
+  transition: opacity 380ms ease;
+}
+body.wm-active #wm-edge { opacity: 1; }
+#wm-edge::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, #7df9ff, #b07cff, #ff7ad9, #ffd57a, #7df9ff);
+  background-size: 300% 100%;
+  -webkit-mask:
+    linear-gradient(to right,  black, transparent 2%),
+    linear-gradient(to left,   black, transparent 2%),
+    linear-gradient(to bottom, black, transparent 5%),
+    linear-gradient(to top,    black, transparent 5%);
+          mask:
+    linear-gradient(to right,  black, transparent 2%),
+    linear-gradient(to left,   black, transparent 2%),
+    linear-gradient(to bottom, black, transparent 5%),
+    linear-gradient(to top,    black, transparent 5%);
+  filter: blur(22px) saturate(1.25);
+  animation: wm-flow 5s linear infinite;
+}
+@keyframes wm-flow { to { background-position: 300% 0; } }
+
+#wm-cursor {
+  position: fixed; top: 0; left: 0;
+  width: 28px; height: 28px;
+  margin-left: -2px; margin-top: -4px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-9999px, -9999px) scale(0.5);
+  transition: opacity 200ms ease-out;
+  z-index: 2147483644;
+  will-change: transform, opacity;
+  filter:
+    drop-shadow(0 0 3px rgba(125,249,255,0.85))
+    drop-shadow(0 0 10px rgba(176,124,255,0.6))
+    drop-shadow(0 0 22px rgba(255,122,217,0.45));
+}
+#wm-cursor.visible { opacity: 1; }
+#wm-cursor .shape {
+  position: relative;
+  width: 100%; height: 100%;
+  overflow: hidden;
+  /* mask-image set in JS via chrome.runtime.getURL */
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+  -webkit-mask-position: top left;
+          mask-position: top left;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+}
+#wm-cursor .grad {
+  position: absolute; left: -50%; top: -50%;
+  width: 200%; height: 200%;
+  background: conic-gradient(from 0deg, #7df9ff, #b07cff, #ff7ad9, #ffd57a, #7df9ff);
+  animation: wm-grad-spin 3.2s linear infinite;
+}
+@keyframes wm-grad-spin { to { transform: rotate(360deg); } }
+
+#wm-highlight {
+  position: fixed; top: 0; left: 0;
+  pointer-events: none;
+  border-radius: 8px;
+  border: 1.5px dashed rgba(125,249,255,0.9);
+  box-shadow:
+    0 0 0 1px rgba(125,249,255,0.25),
+    0 0 24px rgba(125,249,255,0.35),
+    inset 0 0 18px rgba(176,124,255,0.18);
+  background: rgba(125,249,255,0.04);
+  opacity: 0;
+  transition: opacity 120ms ease-out, transform 90ms ease-out, width 90ms ease-out, height 90ms ease-out;
+  z-index: 2147483643;
+  will-change: transform, width, height, opacity;
+}
+
+#wm-highlight.picked {
+  border-style: solid;
+  background: rgba(255, 122, 217, 0.08);
+  border-color: rgba(255, 122, 217, 0.95);
+}
+
+#wm-ripples { position: fixed; inset: 0; pointer-events: none; z-index: 2147483641; }
+.wm-ring {
+  position: absolute; left: 0; top: 0;
+  width: 24px; height: 24px; margin: -12px 0 0 -12px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(125,249,255,0.9);
+  box-shadow: 0 0 18px rgba(125,249,255,0.5), inset 0 0 18px rgba(176,124,255,0.35);
+  transform: scale(0.2); opacity: 0.9;
+  animation: wm-ring 700ms ease-out forwards;
+}
+.wm-ring.b { border-color: rgba(255,122,217,0.85); animation-duration: 850ms; animation-delay: 60ms; }
+.wm-ring.c { border-color: rgba(176,124,255,0.85); animation-duration: 1000ms; animation-delay: 120ms; }
+@keyframes wm-ring { to { transform: scale(18); opacity: 0; } }
+.wm-spark {
+  position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px;
+  background: #fff; border-radius: 50%;
+  box-shadow: 0 0 8px rgba(255,255,255,0.9), 0 0 16px rgba(125,249,255,0.7);
+  animation: wm-spark 700ms ease-out forwards;
+}
+@keyframes wm-spark { to { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; } }
+
+#wm-tag {
+  position: fixed; top: 0; left: 0;
+  pointer-events: none;
+  font: 600 11px/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  color: #0b0d12;
+  background: rgba(125, 249, 255, 0.95);
+  padding: 3px 6px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 120ms ease, transform 90ms ease-out;
+  z-index: 2147483644;
+  white-space: nowrap;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+body.wm-active, body.wm-active * { cursor: none !important; }
