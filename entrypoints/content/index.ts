@@ -113,6 +113,28 @@ export default defineContentScript({
     let cursorX = 0, cursorY = 0;
     let lastHover: Element | null = null;
 
+    // Picked-element tracking for O(1) hot-path lookup
+    const pickedElements = new Set<Element>();
+    const pickElementsById = new Map<string, Element>();
+
+    // rAF batching for overlay writes
+    let rafScheduled = false;
+    let pendingHighlight: DOMRect | null = null;
+    let pendingHighlightPicked = false;
+    let pendingTagRect: DOMRect | null = null;
+    let pendingTagName = '';
+
+    function schedulePaint() {
+      if (rafScheduled) return;
+      rafScheduled = true;
+      requestAnimationFrame(() => {
+        rafScheduled = false;
+        overlay.setCursor(cursorX, cursorY, true);
+        overlay.setHighlight(pendingHighlight, pendingHighlightPicked);
+        overlay.setTag(pendingTagRect, pendingTagName);
+      });
+    }
+
     function buildSelector(el: Element): string {
       const parts: string[] = [];
       let cur: Element | null = el;
@@ -162,6 +184,8 @@ export default defineContentScript({
     function deactivate() {
       stagingPicks = [];
       lastHover = null;
+      pickedElements.clear();
+      pickElementsById.clear();
       pill.unmount();
       overlay.setCursor(cursorX, cursorY, false);
       overlay.setHighlight(null, false);
@@ -171,6 +195,8 @@ export default defineContentScript({
     }
 
     function removePick(id: string) {
+      const el = pickElementsById.get(id);
+      if (el) { pickedElements.delete(el); pickElementsById.delete(id); }
       stagingPicks = stagingPicks.filter(p => p.id !== id);
       pill.setPicks(stagingPicks);
       if (stagingPicks.length === 0 && state.getMode() === 'selecting') deactivate();
@@ -204,6 +230,8 @@ export default defineContentScript({
       if (stagingPicks.length === 0) return;
       const picks = [...stagingPicks];
       stagingPicks = [];
+      pickedElements.clear();
+      pickElementsById.clear();
       pill.unmount();
       overlay.spawnBurst(cursorX, cursorY);
       overlay.setCursor(cursorX, cursorY, false);
@@ -379,11 +407,13 @@ export default defineContentScript({
         }
         return;
       }
-      overlay.setCursor(cursorX, cursorY, true);
       const leaf = document.elementFromPoint(cursorX, cursorY);
       if (!leaf || leaf.closest('#wm-root')) {
-        overlay.setHighlight(null, false);
-        overlay.setTag(null, '');
+        pendingHighlight = null;
+        pendingHighlightPicked = false;
+        pendingTagRect = null;
+        pendingTagName = '';
+        schedulePaint();
         return;
       }
       const resolved = resolveTarget(leaf);
@@ -391,13 +421,16 @@ export default defineContentScript({
       lastHover = resolved;
       const rect = resolved.getBoundingClientRect();
       if (rect.width < 2 || rect.height < 2) {
-        overlay.setHighlight(null, false);
+        pendingHighlight = null;
+        pendingHighlightPicked = false;
+        schedulePaint();
         return;
       }
-      const sel = buildSelector(resolved);
-      const picked = stagingPicks.some(p => p.selector === sel);
-      overlay.setHighlight(rect, picked);
-      overlay.setTag(rect, resolved.tagName.toLowerCase());
+      pendingHighlight = rect;
+      pendingHighlightPicked = pickedElements.has(resolved);
+      pendingTagRect = rect;
+      pendingTagName = resolved.tagName.toLowerCase();
+      schedulePaint();
     }, { capture: true });
 
     document.addEventListener('click', (e) => {
@@ -410,8 +443,15 @@ export default defineContentScript({
       const resolved = resolveTarget(leaf);
       const newPick = makePickRef(resolved);
       const dupIdx = stagingPicks.findIndex(p => p.selector === newPick.selector);
-      if (dupIdx >= 0) stagingPicks.splice(dupIdx, 1);
-      else stagingPicks.push(newPick);
+      if (dupIdx >= 0) {
+        const removed = stagingPicks.splice(dupIdx, 1)[0];
+        pickedElements.delete(resolved);
+        pickElementsById.delete(removed.id);
+      } else {
+        stagingPicks.push(newPick);
+        pickedElements.add(resolved);
+        pickElementsById.set(newPick.id, resolved);
+      }
       pill.setPicks(stagingPicks);
     }, { capture: true });
 
