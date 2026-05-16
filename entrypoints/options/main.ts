@@ -137,3 +137,6 @@ saveBtn.addEventListener('click', async () => {
 });
 
 load();
+
+import { initActionsUI } from './actions-library';
+initActionsUI().catch(err => console.error('[wm options] actions UI init failed:', err));
