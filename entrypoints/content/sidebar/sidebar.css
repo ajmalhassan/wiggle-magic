@@ -194,3 +194,41 @@ html.wm-sidebar-open {
   align-items: center;
   justify-content: center;
 }
+
+/* ── Slash menu ── */
+#wm-sidebar .slash-menu {
+  position: absolute;
+  bottom: 70px;
+  left: 16px;
+  right: 16px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: rgba(20, 24, 35, 0.99);
+  border: 1px solid rgba(125, 249, 255, 0.18);
+  border-radius: 10px;
+  box-shadow: 0 -8px 32px rgba(0,0,0,0.4);
+  z-index: 1;
+}
+#wm-sidebar .slash-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+#wm-sidebar .slash-item[aria-selected="true"] {
+  background: rgba(125, 249, 255, 0.12);
+}
+#wm-sidebar .slash-item .slash-icon { font-size: 14px; }
+#wm-sidebar .slash-item .slash-label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: #7df9ff;
+}
+#wm-sidebar .slash-item .slash-desc {
+  font-size: 11px;
+  color: #8a93a6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
