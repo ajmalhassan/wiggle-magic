@@ -51,8 +51,8 @@ export default defineContentScript({
 
     const sidebar = createSidebarMount(root);
     const shell = createShell(sidebar, state);
-    const composer = createComposer(sidebar.composer, state, registry);
     const slashMenu = createSlashMenu(sidebar.composer, registry);
+    const composer = createComposer(sidebar.composer, state, registry, slashMenu);
 
     const turnList = createTurnList(sidebar.body, registry, {
       onSave: async (m) => {

@@ -3,6 +3,7 @@ import type { State } from '../state';
 import type { ActionRegistry } from '@/src/lib/actions/registry';
 import type { ActionDef, ActionContext } from '@/src/lib/types/action';
 import type { PickRef } from '@/src/lib/types/thread';
+import type { SlashMenu } from './slash-menu';
 import { renderChip } from './chip';
 
 export interface Composer {
@@ -17,6 +18,7 @@ export function createComposer(
   parent: HTMLElement,
   state: State,
   registry: ActionRegistry,
+  slashMenu?: SlashMenu,
 ): Composer {
   let stagedPicks: PickRef[] = [];
   let activeCtx: ActionContext | null = null;
@@ -102,6 +104,34 @@ export function createComposer(
     const ask = registry.getById('ask');
     if (ask) submit(ask, input.value);
   });
+
+  // Slash menu wiring (only if a menu was passed in)
+  if (slashMenu) {
+    input.addEventListener('input', () => {
+      slashMenu.update(input.value);
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (!slashMenu.isOpen()) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        slashMenu.next();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        slashMenu.prev();
+      } else if (e.key === 'Tab' || (e.key === 'Enter' && input.value.startsWith('/'))) {
+        e.preventDefault();
+        const accepted = slashMenu.acceptHighlighted();
+        if (accepted) {
+          submit(accepted.action, accepted.trailingText.trim() || undefined);
+          slashMenu.hide();
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        slashMenu.hide();
+      }
+    });
+  }
 
   return {
     el: root,
