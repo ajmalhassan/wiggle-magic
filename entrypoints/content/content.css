@@ -150,8 +150,7 @@ body.wm-active #wm-edge { opacity: 1; }
 #wm-sheet.visible { transform: translate(-50%, 0); opacity: 1; }
 #wm-sheet.expanded {
   width: min(720px, 92vw);
-  height: auto;
-  max-height: min(80vh, 720px);
+  height: min(80vh, 600px);
   border-radius: 24px;
   pointer-events: auto;
 }
