@@ -216,8 +216,9 @@ export default defineContentScript({
       shell.setBackend(backend, true);
       state.setMode('sidebar');
 
+      turnList.reset(currentThread.turns);
       if (isRestored) {
-        sidebar.body.appendChild(renderRestorationBanner(async () => {
+        sidebar.body.insertBefore(renderRestorationBanner(async () => {
           await threadStore.archive(origin, pathname);
           currentThread = {
             id: `${origin}${pathname}`,
@@ -229,9 +230,8 @@ export default defineContentScript({
           };
           await threadStore.save(currentThread);
           turnList.reset([]);
-        }));
+        }), sidebar.body.firstChild);
       }
-      turnList.reset(currentThread.turns);
 
       composer.setPicks(picks);
       const ctx = { picks, thread: currentThread, backend, pageMeta: getPageMeta() };
