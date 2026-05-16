@@ -90,49 +90,36 @@ export function createComposer(
     input.value = '';
   }
 
+  const ASK_ID = 'ask';
+
   addBtn.addEventListener('click', () => state.emit('add-clicked', {}));
 
   input.addEventListener('keydown', (e) => {
+    if (slashMenu?.isOpen()) {
+      if (e.key === 'ArrowDown')   { e.preventDefault(); slashMenu.next(); return; }
+      if (e.key === 'ArrowUp')     { e.preventDefault(); slashMenu.prev(); return; }
+      if (e.key === 'Escape')      { e.preventDefault(); slashMenu.hide(); return; }
+      if (e.key === 'Tab' || (e.key === 'Enter' && input.value.startsWith('/'))) {
+        e.preventDefault();
+        const accepted = slashMenu.acceptHighlighted();
+        if (accepted) submit(accepted.action, accepted.trailingText.trim() || undefined);
+        return;
+      }
+    }
     if (e.key === 'Enter' && input.value.trim().length > 0) {
       e.preventDefault();
-      const ask = registry.getById('ask');
+      const ask = registry.getById(ASK_ID);
       if (ask) submit(ask, input.value);
     }
   });
 
+  input.addEventListener('input', () => slashMenu?.update(input.value));
+
   sendBtn.addEventListener('click', () => {
     if (input.value.trim().length === 0) return;
-    const ask = registry.getById('ask');
+    const ask = registry.getById(ASK_ID);
     if (ask) submit(ask, input.value);
   });
-
-  // Slash menu wiring (only if a menu was passed in)
-  if (slashMenu) {
-    input.addEventListener('input', () => {
-      slashMenu.update(input.value);
-    });
-
-    input.addEventListener('keydown', (e) => {
-      if (!slashMenu.isOpen()) return;
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        slashMenu.next();
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        slashMenu.prev();
-      } else if (e.key === 'Tab' || (e.key === 'Enter' && input.value.startsWith('/'))) {
-        e.preventDefault();
-        const accepted = slashMenu.acceptHighlighted();
-        if (accepted) {
-          submit(accepted.action, accepted.trailingText.trim() || undefined);
-          slashMenu.hide();
-        }
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        slashMenu.hide();
-      }
-    });
-  }
 
   return {
     el: root,

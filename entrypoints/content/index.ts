@@ -161,6 +161,7 @@ export default defineContentScript({
 
     function deactivate() {
       stagingPicks = [];
+      lastHover = null;
       pill.unmount();
       overlay.setCursor(cursorX, cursorY, false);
       overlay.setHighlight(null, false);
@@ -175,9 +176,24 @@ export default defineContentScript({
       if (stagingPicks.length === 0 && state.getMode() === 'selecting') deactivate();
     }
 
+    let cachedSettings: WmSettings | null = null;
     async function getSettings(): Promise<WmSettings> {
+      if (cachedSettings) return cachedSettings;
       const out = await chrome.storage.sync.get('wm_settings') as { wm_settings?: WmSettings };
-      return out.wm_settings ?? { backend: 'nano', provider: '', apiKey: '', model: '' };
+      cachedSettings = out.wm_settings ?? { backend: 'nano', provider: '', apiKey: '', model: '' };
+      return cachedSettings;
+    }
+
+    function makeFreshThread(origin: string, pathname: string): Thread {
+      const now = Date.now();
+      return {
+        id: `${origin}${pathname}`,
+        origin, pathname,
+        title: document.title || '(untitled)',
+        turns: [],
+        createdAt: now,
+        lastTouchedAt: now,
+      };
     }
 
     function getPageMeta() {
@@ -202,14 +218,7 @@ export default defineContentScript({
 
       const fresh = await threadStore.loadIfFresh(origin, pathname);
       const isRestored = fresh !== null && fresh.turns.length > 0;
-      currentThread = fresh ?? {
-        id: `${origin}${pathname}`,
-        origin, pathname,
-        title: document.title || '(untitled)',
-        turns: [],
-        createdAt: Date.now(),
-        lastTouchedAt: Date.now(),
-      };
+      currentThread = fresh ?? makeFreshThread(origin, pathname);
       await threadStore.save(currentThread);
 
       sidebar.open();
@@ -220,14 +229,7 @@ export default defineContentScript({
       if (isRestored) {
         sidebar.body.insertBefore(renderRestorationBanner(async () => {
           await threadStore.archive(origin, pathname);
-          currentThread = {
-            id: `${origin}${pathname}`,
-            origin, pathname,
-            title: document.title || '(untitled)',
-            turns: [],
-            createdAt: Date.now(),
-            lastTouchedAt: Date.now(),
-          };
+          currentThread = makeFreshThread(origin, pathname);
           await threadStore.save(currentThread);
           turnList.reset([]);
         }), sidebar.body.firstChild);
@@ -426,6 +428,7 @@ export default defineContentScript({
         else if (mode === 'sidebar+selecting') {
           e.preventDefault();
           stagingPicks = [];
+          lastHover = null;
           pill.unmount();
           overlay.setCursor(cursorX, cursorY, false);
           overlay.setHighlight(null, false);
