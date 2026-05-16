@@ -1,5 +1,6 @@
 import './content.css';
 import { renderMarkdownInto } from '@/src/lib/markdown';
+import { createWiggleDetector, DEFAULT_WIGGLE_OPTS } from '@/src/lib/picker/detect-wiggle';
 import type { WmSettings, MemoryEntry, MemoryAction } from '@/src/lib/types';
 
 export default defineContentScript({
@@ -7,16 +8,8 @@ export default defineContentScript({
   runAt: 'document_idle',
   cssInjectionMode: 'manifest',
   main() {
-    // ---------- tunables ----------
-    const opts = {
-      windowMs: 600,
-      minReversals: 4,
-      maxRadius: 220,
-      minSpeedPxMs: 0.25,
-      minDx: 3,
-      minSamples: 5,
-      cooldownMs: 1200,
-    };
+    // ---------- wiggle detector ----------
+    const wiggle = createWiggleDetector(DEFAULT_WIGGLE_OPTS);
 
     interface Payload {
       selector: string;
@@ -166,8 +159,6 @@ export default defineContentScript({
     const coachDismiss = root.querySelector<HTMLButtonElement>('#wm-coach-dismiss')!;
 
     // ---------- state ----------
-    let samples: { x: number; y: number; t: number }[] = [];
-    let lastTrigger = 0;
     let cursorX = 0, cursorY = 0;
     let rafPending = false;
     let lastHighlightEl: Element | null = null;
@@ -184,45 +175,13 @@ export default defineContentScript({
     let answerSavedThisRun = false;
     const sheetState = { activeAction: null as MemoryAction | null, stale: false };
 
-    // ---------- wiggle detector ----------
     function onPointerMove(e: MouseEvent): void {
       cursorX = e.clientX;
       cursorY = e.clientY;
-
       if (picker.mode === 'activating' || picker.mode === 'sheet') return;
       if (picker.mode === 'selecting') schedulePaint();
 
-      const now = performance.now();
-      if (now - lastTrigger < opts.cooldownMs) return;
-
-      samples.push({ x: cursorX, y: cursorY, t: now });
-      while (samples.length && now - samples[0].t > opts.windowMs) samples.shift();
-      if (samples.length < opts.minSamples) return;
-
-      let reversals = 0;
-      let minX =  Infinity, maxX = -Infinity;
-      let minY =  Infinity, maxY = -Infinity;
-      let dist = 0;
-      let dirPrev = 0;
-      for (let i = 1; i < samples.length; i++) {
-        const a = samples[i - 1], b = samples[i];
-        const dx = b.x - a.x, dy = b.y - a.y;
-        dist += Math.hypot(dx, dy);
-        if (Math.abs(dx) >= opts.minDx) {
-          const dir = dx > 0 ? 1 : -1;
-          if (dirPrev && dir !== dirPrev) reversals++;
-          dirPrev = dir;
-        }
-        if (b.x < minX) minX = b.x; if (b.x > maxX) maxX = b.x;
-        if (b.y < minY) minY = b.y; if (b.y > maxY) maxY = b.y;
-      }
-      const dt = samples[samples.length - 1].t - samples[0].t;
-      const speed = dist / Math.max(dt, 1);
-      const radius = Math.max(maxX - minX, maxY - minY);
-
-      if (reversals >= opts.minReversals && radius <= opts.maxRadius && speed >= opts.minSpeedPxMs) {
-        lastTrigger = now;
-        samples.length = 0;
+      if (wiggle.observe(cursorX, cursorY, performance.now())) {
         if (picker.mode === 'idle') activate(cursorX, cursorY);
         else if (picker.mode === 'selecting') deactivate();
       }
@@ -252,7 +211,7 @@ export default defineContentScript({
       overlay.unmountChipBar();
       for (const sel of picker.picks) sel.marker.remove();
       picker.picks.length = 0;
-      samples.length = 0;
+      wiggle.reset();
       lastHighlightEl = null;
       lastLeaf = null;
     }
@@ -658,7 +617,7 @@ export default defineContentScript({
         picker.picks.length = 0;
         document.body.classList.remove('wm-active');
         document.documentElement.style.overflow = prevHtmlOverflow;
-        samples.length = 0;
+        wiggle.reset();
         lastHighlightEl = null;
         lastLeaf = null;
         currentAnswer = '';
@@ -1264,7 +1223,6 @@ export default defineContentScript({
     }
 
     // ---------- modules ----------
-    const wiggle  = { onMove: onPointerMove };
     const overlay = { paintCursor, paintHighlight, spawnBurst, applyRectBox, isOverlayHit, repaintMarkers, mountChipBar, unmountChipBar, renderChipBar };
     const picker  = {
       mode: 'idle' as Mode,
@@ -1282,7 +1240,7 @@ export default defineContentScript({
     const sheet   = { show: showSheet, close: closeSheet, askAI: submitAsk, save: saveCurrentAnswer, copy: copyCurrentAnswer, onChipRemove: onChipRemoveInSheet, rerun, showError };
 
     // ---------- bindings ----------
-    document.addEventListener('mousemove', wiggle.onMove, { passive: true });
+    document.addEventListener('mousemove', onPointerMove, { passive: true });
     document.addEventListener('click', picker.pick, true);
     document.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.altKey && e.shiftKey && (e.key === 'M' || e.key === 'm')) {
