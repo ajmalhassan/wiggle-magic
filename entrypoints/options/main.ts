@@ -1,5 +1,15 @@
 import type { WmSettings } from '@/src/lib/types';
 
+const tabs = document.querySelectorAll<HTMLButtonElement>('.options-tab');
+const sections = document.querySelectorAll<HTMLElement>('section.tab');
+for (const t of tabs) {
+  t.addEventListener('click', () => {
+    for (const x of tabs) x.classList.toggle('active', x === t);
+    const name = t.dataset.tab!;
+    for (const s of sections) s.hidden = s.dataset.tab !== name;
+  });
+}
+
 type Settings = Partial<WmSettings>;
 
 const backendEl  = document.getElementById('backend')  as HTMLSelectElement;
