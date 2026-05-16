@@ -74,6 +74,65 @@ describe('validateAction', () => {
     if (!r.ok) expect(r.errors.some(e => e.field === 'availableWhen')).toBe(true);
   });
 
+  it('rejects minPicks with non-positive n', () => {
+    const r = validateAction(makeAction({ availableWhen: { kind: 'minPicks', n: 0 } }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.some(e => e.field === 'availableWhen')).toBe(true);
+  });
+
+  it('rejects minPicks with non-integer n', () => {
+    const r = validateAction(makeAction({ availableWhen: { kind: 'minPicks', n: 1.5 } }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.some(e => e.field === 'availableWhen')).toBe(true);
+  });
+
+  it('rejects pickTypesIncludes with empty types array', () => {
+    const r = validateAction(makeAction({ availableWhen: { kind: 'pickTypesIncludes', types: [] } }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.some(e => e.field === 'availableWhen')).toBe(true);
+  });
+
+  it('rejects pickTypesIncludes with unknown type value', () => {
+    const r = validateAction(makeAction({ availableWhen: { kind: 'pickTypesIncludes', types: ['bogus' as any] } }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.some(e => e.field === 'availableWhen')).toBe(true);
+  });
+
+  it('rejects pickTagsIncludes with empty tags array', () => {
+    const r = validateAction(makeAction({ availableWhen: { kind: 'pickTagsIncludes', tags: [] } }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.some(e => e.field === 'availableWhen')).toBe(true);
+  });
+
+  it('rejects pickTagsIncludes with unknown tag value', () => {
+    const r = validateAction(makeAction({ availableWhen: { kind: 'pickTagsIncludes', tags: ['nope' as any] } }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.some(e => e.field === 'availableWhen')).toBe(true);
+  });
+
+  it('rejects and with empty rules array', () => {
+    const r = validateAction(makeAction({ availableWhen: { kind: 'and', rules: [] } }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.some(e => e.field === 'availableWhen')).toBe(true);
+  });
+
+  it('rejects and with a nested invalid rule', () => {
+    const r = validateAction(makeAction({
+      availableWhen: { kind: 'and', rules: [{ kind: 'minPicks', n: 0 }] },
+    }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.some(e => e.field.startsWith('availableWhen.rules['))).toBe(true);
+  });
+
+  it('accepts valid pickTypesIncludes and pickTagsIncludes with minCount', () => {
+    expect(validateAction(makeAction({
+      availableWhen: { kind: 'pickTypesIncludes', types: ['text', 'img'], minCount: 2 },
+    })).ok).toBe(true);
+    expect(validateAction(makeAction({
+      availableWhen: { kind: 'pickTagsIncludes', tags: ['code', 'table'], minCount: 1 },
+    })).ok).toBe(true);
+  });
+
   it('accumulates multiple errors', () => {
     const r = validateAction(makeAction({ id: '', label: '', prompt: { user: '' } }));
     expect(r.ok).toBe(false);

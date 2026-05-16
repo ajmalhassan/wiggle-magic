@@ -8,6 +8,9 @@ const VALID_AVAILABILITY_KINDS = [
   'always', 'minPicks', 'pickTypesIncludes', 'pickTagsIncludes', 'and',
 ] as const;
 
+const VALID_PICK_TYPES = ['text', 'img', 'link', 'control', 'media'] as const;
+const VALID_PICK_TAGS = ['code', 'table', 'price', 'video', 'long', 'short'] as const;
+
 function validateAvailability(
   rule: unknown,
   field: string,
@@ -24,17 +27,35 @@ function validateAvailability(
   }
   switch (r.kind) {
     case 'minPicks':
-      if (typeof r.n !== 'number') errors.push({ field, message: 'minPicks requires numeric n' });
+      if (typeof r.n !== 'number' || !Number.isInteger(r.n) || r.n <= 0) {
+        errors.push({ field, message: 'minPicks requires positive integer n' });
+      }
       break;
     case 'pickTypesIncludes':
-      if (!Array.isArray(r.types)) errors.push({ field, message: 'pickTypesIncludes requires types array' });
+      if (!Array.isArray(r.types) || r.types.length === 0) {
+        errors.push({ field, message: 'pickTypesIncludes requires non-empty types array' });
+      } else {
+        for (const t of r.types) {
+          if (!(VALID_PICK_TYPES as readonly string[]).includes(t)) {
+            errors.push({ field, message: `pickTypesIncludes has unknown type: ${t}` });
+          }
+        }
+      }
       break;
     case 'pickTagsIncludes':
-      if (!Array.isArray(r.tags)) errors.push({ field, message: 'pickTagsIncludes requires tags array' });
+      if (!Array.isArray(r.tags) || r.tags.length === 0) {
+        errors.push({ field, message: 'pickTagsIncludes requires non-empty tags array' });
+      } else {
+        for (const t of r.tags) {
+          if (!(VALID_PICK_TAGS as readonly string[]).includes(t)) {
+            errors.push({ field, message: `pickTagsIncludes has unknown tag: ${t}` });
+          }
+        }
+      }
       break;
     case 'and':
-      if (!Array.isArray(r.rules)) {
-        errors.push({ field, message: 'and requires rules array' });
+      if (!Array.isArray(r.rules) || r.rules.length === 0) {
+        errors.push({ field, message: 'and requires non-empty rules array' });
       } else {
         r.rules.forEach((sub, i) => validateAvailability(sub, `${field}.rules[${i}]`, errors));
       }

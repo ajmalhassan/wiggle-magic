@@ -141,7 +141,7 @@ interface Thread {
 wm:thread:<origin><pathname>   →  Thread
 wm:thread-index                →  Array<{ id, lastTouchedAt, title, archived }>
 wm:thread-archive:<id>         →  Thread                (after `Start fresh`)
-wm:memory                      →  Array<MemoryEntry>    (existing; unchanged shape)
+wm_memory                      →  Array<MemoryEntry>    (existing; unchanged key + shape)
 wm:sidebar-width:<origin>      →  number
 ```
 
@@ -154,7 +154,7 @@ wm:sidebar-width:<origin>      →  number
 
 ### 4.3 Save semantics
 
-Per-turn, not per-thread. Every Magic turn has its own `[Save]` button. Saving copies into `wm:memory`:
+Per-turn, not per-thread. Every Magic turn has its own `[Save]` button. Saving copies into `wm_memory` (the existing storage key used by the popup):
 
 ```ts
 {
@@ -607,7 +607,7 @@ The v2.1 sheet code is removed wholesale.
 2. **Rename**: the existing selection-state pill (currently `#wm-sheet` in collapsed form) → dedicated `#wm-pill` element with its own CSS file.
 3. **Relocate**: wiggle detector, `resolveTarget`, payload extraction, AI backend code, and markdown rendering into the `src/lib/` modules listed in §7.1. No behavior change in these pieces.
 4. **Backward compatibility**:
-   - `wm:memory` storage is unchanged. Existing saved memories render correctly in the popup.
+   - `wm_memory` storage is unchanged (key matches the popup's existing convention; uses an underscore, not the colon prefix of the new `wm:*` keys). Existing saved memories render correctly in the popup.
    - New storage keys (`wm:thread:*`, `wm:thread-index`, `wm:actions:*`, `wm:sidebar-width:*`) are net-new — no migration needed.
 5. **Seed on first run**: `wm:actions:hero = ['summarize', 'compare']`; `wm:actions:enabled-library = []` (users browse the library and opt in).
 6. **Feature flag**: gate the new sidebar behind a single `wm:feature:sidebar-v3` boolean in `chrome.storage.local`, default `true` after the rebuild ships; lets us A/B during canary if needed. Removed in the release after the rebuild.

@@ -47,7 +47,10 @@ export function createThreadStore(kv: KVStore): ThreadStore {
         await kv.remove(key(origin, pathname));
       }
     }
-    const remaining = (await readIndex()).filter(e => e.archived || active.some(a => a.id === e.id));
+    // `idx` already holds every entry; `active` is the post-eviction subset
+    // (oldest entries removed via shift). Rebuild from idx without re-reading
+    // storage — nothing between the two reads modifies wm:thread-index.
+    const remaining = idx.filter(e => e.archived || active.some(a => a.id === e.id));
     await writeIndex(remaining);
   }
 

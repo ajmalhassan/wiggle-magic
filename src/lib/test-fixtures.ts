@@ -1,6 +1,6 @@
 // src/lib/test-fixtures.ts
 import type { ActionDef, ActionContext, PageMeta } from './types/action';
-import type { PickRef, Thread, Backend } from './types/thread';
+import type { PickRef, Thread, UserTurn, MagicTurn, Backend } from './types/thread';
 import type { Payload } from './types/payload';
 
 export function makePayload(overrides: Partial<Payload> = {}): Payload {
@@ -74,6 +74,33 @@ export function makeThread(overrides: Partial<Thread> = {}): Thread {
     turns: [],
     createdAt: now,
     lastTouchedAt: now,
+    ...overrides,
+  };
+}
+
+export function makeUserTurn(overrides: Partial<UserTurn> = {}): UserTurn {
+  return {
+    id: 't-user-1',
+    role: 'user',
+    kind: 'hero',
+    actionId: 'summarize',
+    modifiers: [],
+    picks: [makePick()],
+    ts: Date.now(),
+    ...overrides,
+  };
+}
+
+export function makeMagicTurn(overrides: Partial<MagicTurn> = {}): MagicTurn {
+  return {
+    id: 't-magic-1',
+    role: 'magic',
+    inReplyTo: 't-user-1',
+    answer: 'Magic answered.',
+    sources: [makePick()],
+    status: 'done',
+    backend: 'nano' as Backend,
+    ts: Date.now(),
     ...overrides,
   };
 }

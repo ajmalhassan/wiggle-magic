@@ -1,12 +1,15 @@
 // src/lib/thread/operations.ts
-import type { Thread, Turn, MagicTurn, UserTurn } from '../types/thread';
+import type { Thread, Turn, MagicTurn, UserTurn, PickRef } from '../types/thread';
 import type { ThreadStore } from './store';
 import type { KVStore } from '../storage';
 import type { MemoryEntry, MemoryAction, SavedSelection } from '../types';
 
 export const MAX_TURNS_PER_THREAD = 20;
 
-const MEMORY_KEY = 'wm:memory';
+// Underscore form, not colon — matches the key the popup and content script
+// already read/write. Changing to a colon-namespaced key would split memory
+// entries across two storage slots and break the popup.
+const MEMORY_KEY = 'wm_memory';
 
 export interface ThreadOperations {
   appendTurn(origin: string, pathname: string, turn: Turn): Promise<Thread>;
@@ -27,7 +30,12 @@ function mapToLegacyAction(actionId: string, modifiers: string[]): MemoryAction 
   return 'ask';
 }
 
-function pickRefToSavedSelection(p: import('../types/thread').PickRef): SavedSelection {
+/**
+ * Projects a PickRef into the SavedSelection shape the popup renders.
+ * Exported so the Plan 2 sidebar can reuse the same projection when saving
+ * answers directly without going through promoteToMemory.
+ */
+export function pickRefToSavedSelection(p: PickRef): SavedSelection {
   const sel: SavedSelection = { tag: p.payload.tag };
   if (p.payload.text) sel.text = p.payload.text;
   if (p.payload.link) sel.link = { href: p.payload.link.href, text: p.payload.link.text };
@@ -65,14 +73,14 @@ export function createThreadOperations(store: ThreadStore, kv: KVStore): ThreadO
 
     async promoteToMemory(thread, magic) {
       const user = thread.turns.find(x => x.role === 'user' && x.id === magic.inReplyTo) as UserTurn | undefined;
-      const url = `${thread.origin}${thread.pathname}`;
+      const question = user?.text ?? user?.actionId ?? magic.inReplyTo;
       const entry: MemoryEntry = {
-        id: `mem-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        id: crypto.randomUUID(),
         ts: Date.now(),
-        url,
+        url: `${thread.origin}${thread.pathname}`,
         title: thread.title,
         hostname: thread.origin.replace(/^https?:\/\//, ''),
-        question: user?.text ?? (user ? user.actionId : magic.inReplyTo),
+        question,
         answer: magic.answer,
         selections: magic.sources.map(pickRefToSavedSelection),
         action: mapToLegacyAction(user?.actionId ?? 'ask', user?.modifiers ?? []),

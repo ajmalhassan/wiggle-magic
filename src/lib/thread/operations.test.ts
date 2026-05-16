@@ -3,36 +3,9 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createThreadOperations, MAX_TURNS_PER_THREAD } from './operations';
 import { createThreadStore } from './store';
 import { memoryKV } from '../storage';
-import { makeThread, makePick } from '../test-fixtures';
-import type { UserTurn, MagicTurn } from '../types/thread';
+import { makeThread, makeUserTurn, makeMagicTurn } from '../test-fixtures';
+import type { MagicTurn } from '../types/thread';
 import type { MemoryEntry } from '../types';
-
-function makeUserTurn(overrides: Partial<UserTurn> = {}): UserTurn {
-  return {
-    id: 't-user-1',
-    role: 'user',
-    kind: 'hero',
-    actionId: 'summarize',
-    modifiers: [],
-    picks: [makePick()],
-    ts: Date.now(),
-    ...overrides,
-  };
-}
-
-function makeMagicTurn(overrides: Partial<MagicTurn> = {}): MagicTurn {
-  return {
-    id: 't-magic-1',
-    role: 'magic',
-    inReplyTo: 't-user-1',
-    answer: 'Magic answered.',
-    sources: [makePick()],
-    status: 'done',
-    backend: 'nano',
-    ts: Date.now(),
-    ...overrides,
-  };
-}
 
 describe('thread operations', () => {
   let kv: ReturnType<typeof memoryKV>;
@@ -89,7 +62,7 @@ describe('thread operations', () => {
 
     await ops.promoteToMemory(t, magic);
 
-    const mem = (await kv.get<MemoryEntry[]>('wm:memory')) ?? [];
+    const mem = (await kv.get<MemoryEntry[]>('wm_memory')) ?? [];
     expect(mem).toHaveLength(1);
     expect(mem[0].question).toBe('why?');
     expect(mem[0].answer).toBe('because.');
@@ -105,7 +78,7 @@ describe('thread operations', () => {
     await store.save(t);
 
     await ops.promoteToMemory(t, magic);
-    const mem = (await kv.get<MemoryEntry[]>('wm:memory')) ?? [];
+    const mem = (await kv.get<MemoryEntry[]>('wm_memory')) ?? [];
     expect(mem[0].action).toBe('summary');           // legacy mapping: summarize → summary
   });
 });

@@ -9,15 +9,14 @@ import { rankHeroes, tagScore } from './ranker';
 import { validateAction } from './validate';
 
 export interface ActionRegistry {
-  // Read
   getAll(): ActionDef[];
   getById(id: string): ActionDef | null;
   getVisibleHeroes(ctx: ActionContext): ActionDef[];
   getSlashOptions(ctx: ActionContext): ActionDef[];
   getModifiers(): ModifierDef[];
   getLibrary(): ActionDef[];
+  isLibraryEnabled(id: string): boolean;
   rankForContext(ctx: ActionContext, candidates: ActionDef[]): ActionDef[];
-  // Mutate
   enableFromLibrary(id: string): Promise<ValidateResult>;
   disableFromLibrary(id: string): Promise<void>;
   registerUser(def: ActionDef): Promise<ValidateResult>;
@@ -31,12 +30,18 @@ const DEFAULT_HERO_ORDER = ['summarize', 'compare'];
 export async function createRegistry(kv: KVStore): Promise<ActionRegistry> {
   const storage = createActionsStorage(kv);
 
-  let userActions: ActionDef[] = await storage.loadUserActions();
-  let heroOrder: string[] = await storage.loadHeroOrder();
-  let hidden: Set<string> = new Set(await storage.loadHidden());
-  let enabledLibrary: Set<string> = new Set(await storage.loadEnabledLibrary());
+  const [loadedUserActions, loadedHeroOrder, loadedHidden, loadedEnabled] = await Promise.all([
+    storage.loadUserActions(),
+    storage.loadHeroOrder(),
+    storage.loadHidden(),
+    storage.loadEnabledLibrary(),
+  ]);
 
-  // First-run seed.
+  let userActions: ActionDef[] = loadedUserActions;
+  let heroOrder: string[] = loadedHeroOrder;
+  let hidden: Set<string> = new Set(loadedHidden);
+  const enabledLibrary: Set<string> = new Set(loadedEnabled);
+
   if (heroOrder.length === 0) {
     heroOrder = [...DEFAULT_HERO_ORDER];
     await storage.saveHeroOrder(heroOrder);
@@ -71,6 +76,8 @@ export async function createRegistry(kv: KVStore): Promise<ActionRegistry> {
     getModifiers() { return BUILTIN_MODIFIERS; },
 
     getLibrary() { return LIBRARY_ACTIONS; },
+
+    isLibraryEnabled(id) { return enabledLibrary.has(id); },
 
     rankForContext(ctx, candidates) {
       return [...candidates].sort((a, b) => {
@@ -115,10 +122,12 @@ export async function createRegistry(kv: KVStore): Promise<ActionRegistry> {
       enabledLibrary.delete(id);
       heroOrder = heroOrder.filter(x => x !== id);
       hidden.delete(id);
-      await storage.saveUserActions(userActions);
-      await storage.saveEnabledLibrary([...enabledLibrary]);
-      await storage.saveHeroOrder(heroOrder);
-      await storage.saveHidden([...hidden]);
+      await Promise.all([
+        storage.saveUserActions(userActions),
+        storage.saveEnabledLibrary([...enabledLibrary]),
+        storage.saveHeroOrder(heroOrder),
+        storage.saveHidden([...hidden]),
+      ]);
       return { ok: true };
     },
 
