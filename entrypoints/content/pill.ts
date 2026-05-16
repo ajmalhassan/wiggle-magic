@@ -6,7 +6,6 @@ export interface Pill {
   mount(): void;
   unmount(): void;
   setPicks(picks: PickRef[]): void;
-  onCommit(fn: () => void): void;
   onChipRemove(fn: (id: string) => void): void;
   el: HTMLElement;
 }
@@ -31,7 +30,6 @@ export function createPill(parent: HTMLElement): Pill {
 
   const countEl = el.querySelector<HTMLElement>('.count')!;
   const chipsEl = el.querySelector<HTMLElement>('.pill-chips')!;
-  let commitFn: (() => void) | null = null;
   let removeFn: ((id: string) => void) | null = null;
 
   function iconFor(p: PickRef): string {
@@ -72,7 +70,6 @@ export function createPill(parent: HTMLElement): Pill {
         chipsEl.appendChild(chip);
       }
     },
-    onCommit(fn) { commitFn = fn; void commitFn; },   // commitFn used externally by parent on Enter key
     onChipRemove(fn) { removeFn = fn; },
   };
 }

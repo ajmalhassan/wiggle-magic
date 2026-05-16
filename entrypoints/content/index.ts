@@ -46,7 +46,6 @@ export default defineContentScript({
     overlay.mount();
 
     const pill = createPill(root);
-    pill.onCommit(() => commit());
     pill.onChipRemove((id) => removePick(id));
 
     const sidebar = createSidebarMount(root);
@@ -190,6 +189,7 @@ export default defineContentScript({
       const picks = [...stagingPicks];
       stagingPicks = [];
       pill.unmount();
+      overlay.spawnBurst(cursorX, cursorY);
       overlay.setCursor(cursorX, cursorY, false);
       overlay.setHighlight(null, false);
       document.body.classList.remove('wm-active');

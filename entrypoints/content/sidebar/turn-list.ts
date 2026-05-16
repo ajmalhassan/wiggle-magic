@@ -16,7 +16,6 @@ export interface TurnList {
   appendUser(turn: UserTurn): void;
   appendMagic(turn: MagicTurn): MagicTurnHandle;
   replaceMagic(oldId: string, replacement: MagicTurn): MagicTurnHandle;
-  setLatestStale(stale: boolean): void;
 }
 
 export function createTurnList(
@@ -25,7 +24,6 @@ export function createTurnList(
   cb: TurnListCallbacks,
 ): TurnList {
   const handlesByMagicId = new Map<string, MagicTurnHandle>();
-  let lastMagicId: string | null = null;
 
   function scrollToBottom() {
     body.scrollTop = body.scrollHeight;
@@ -44,13 +42,11 @@ export function createTurnList(
     reset(turns) {
       body.innerHTML = '';
       handlesByMagicId.clear();
-      lastMagicId = null;
       for (const t of turns) {
         if (t.role === 'user') body.appendChild(renderUserTurn(t, registry));
         else {
           const handle = renderMagicTurn(t, registry, makeCallbacks(t));
           handlesByMagicId.set(t.id, handle);
-          lastMagicId = t.id;
           body.appendChild(handle.el);
         }
       }
@@ -65,7 +61,6 @@ export function createTurnList(
     appendMagic(turn) {
       const handle = renderMagicTurn(turn, registry, makeCallbacks(turn));
       handlesByMagicId.set(turn.id, handle);
-      lastMagicId = turn.id;
       body.appendChild(handle.el);
       scrollToBottom();
       return handle;
@@ -77,14 +72,8 @@ export function createTurnList(
       const newHandle = renderMagicTurn(replacement, registry, makeCallbacks(replacement));
       handlesByMagicId.delete(oldId);
       handlesByMagicId.set(replacement.id, newHandle);
-      if (lastMagicId === oldId) lastMagicId = replacement.id;
       oldHandle.el.replaceWith(newHandle.el);
       return newHandle;
-    },
-
-    setLatestStale(stale) {
-      if (!lastMagicId) return;
-      handlesByMagicId.get(lastMagicId)?.setStale(stale);
     },
   };
 }
