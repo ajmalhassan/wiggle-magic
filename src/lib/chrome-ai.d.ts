@@ -47,7 +47,7 @@ declare global {
     initialPrompts?: Array<{ role: 'system' | 'user'; content: unknown }>;
     temperature?: number;
     topK?: number;
-    expectedInputs?: Array<{ type: 'text' | 'image' | 'audio' }>;
+    expectedInputs?: Array<{ type: 'text' | 'image' | 'audio'; languages?: string[] }>;
     expectedOutputs?: Array<{ type: 'text'; languages?: string[] }>;
   }
 

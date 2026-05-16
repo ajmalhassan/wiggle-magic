@@ -65,8 +65,9 @@ export default defineContentScript({
           <span class="backend-pill" id="wm-backend-pill" hidden></span>
           <div class="header-actions">
             <button class="icon-btn" id="wm-sidebar-toggle" type="button" aria-label="Toggle sidebar" title="Toggle sidebar">
-              <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-                <path fill="currentColor" d="M2 2h12v12H2V2zm1 1v10h10V3H3zm6 0v10h-1V3h1z"/>
+              <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round">
+                <rect x="2.5" y="3" width="11" height="10" rx="1.5"/>
+                <line x1="10" y1="3" x2="10" y2="13"/>
               </svg>
             </button>
             <button class="close" id="wm-sheet-close" type="button" aria-label="Close">×</button>
@@ -910,6 +911,7 @@ export default defineContentScript({
         initialPrompts: [{ role: 'system', content: sysPrompt }],
         temperature: 0.4,
         topK: 3,
+        expectedInputs: [{ type: 'text', languages: ['en'] }],
         expectedOutputs: [{ type: 'text', languages: ['en'] }],
         ...extra,
       });
