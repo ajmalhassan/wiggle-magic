@@ -5,8 +5,7 @@ import { escapeHtml } from '@/src/lib/dom-utils';
 import type { ActionDef } from '@/src/lib/types/action';
 
 export async function initActionsUI() {
-  const kv = chromeKV();
-  const registry = await createRegistry(kv);
+  const registry = await createRegistry(chromeKV());
 
   const coreList = document.getElementById('builtin-core-list')!;
   const libList = document.getElementById('library-list')!;
@@ -27,10 +26,10 @@ export async function initActionsUI() {
     }
   }
 
-  async function renderHeroOrder() {
+  function renderHeroOrder() {
     heroList.innerHTML = '';
     const all = registry.getAll();
-    const heroIds = (await kv.get<string[]>('wm:actions:hero')) ?? [];
+    const heroIds = registry.getHeroOrder();
     heroIds.forEach((id, i) => {
       const a = all.find(x => x.id === id);
       if (!a) return;
@@ -60,19 +59,19 @@ export async function initActionsUI() {
       if (enabled) {
         await registry.disableFromLibrary(a.id);
         // Also remove from hero order if present
-        const heroIds = (await kv.get<string[]>('wm:actions:hero')) ?? [];
+        const heroIds = registry.getHeroOrder();
         const filtered = heroIds.filter(id => id !== a.id);
         if (filtered.length !== heroIds.length) await registry.setHeroOrder(filtered);
       } else {
         await registry.enableFromLibrary(a.id);
-        const heroIds = (await kv.get<string[]>('wm:actions:hero')) ?? [];
+        const heroIds = registry.getHeroOrder();
         if (!heroIds.includes(a.id)) {
           heroIds.push(a.id);
           await registry.setHeroOrder(heroIds);
         }
       }
       renderLibrary();
-      await renderHeroOrder();
+      renderHeroOrder();
     });
     return li;
   }
@@ -86,8 +85,8 @@ export async function initActionsUI() {
     `;
     const up = li.querySelector<HTMLButtonElement>('.up')!;
     const down = li.querySelector<HTMLButtonElement>('.down')!;
-    up.addEventListener('click', async () => { swap(heroIds, idx, idx - 1); await registry.setHeroOrder(heroIds); await renderHeroOrder(); });
-    down.addEventListener('click', async () => { swap(heroIds, idx, idx + 1); await registry.setHeroOrder(heroIds); await renderHeroOrder(); });
+    up.addEventListener('click', async () => { swap(heroIds, idx, idx - 1); await registry.setHeroOrder(heroIds); renderHeroOrder(); });
+    down.addEventListener('click', async () => { swap(heroIds, idx, idx + 1); await registry.setHeroOrder(heroIds); renderHeroOrder(); });
     return li;
   }
 
@@ -95,5 +94,5 @@ export async function initActionsUI() {
 
   renderCore();
   renderLibrary();
-  await renderHeroOrder();
+  renderHeroOrder();
 }

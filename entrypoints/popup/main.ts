@@ -6,6 +6,8 @@ import { KEYS } from '@/src/lib/storage-keys';
 
 const kv = chromeKV();
 
+let cachedMemory: MemoryEntry[] = [];
+
 const listEl    = document.getElementById('list')!;
 const emptyEl   = document.getElementById('empty')!;
 const subEl     = document.getElementById('sub')!;
@@ -18,6 +20,7 @@ settings.addEventListener('click', () => chrome.runtime.openOptionsPage());
 
 async function render(): Promise<void> {
   const wm_memory = (await kv.get<MemoryEntry[]>(KEYS.memory)) ?? [];
+  cachedMemory = wm_memory;
   listEl.innerHTML = '';
   for (const entry of wm_memory) listEl.appendChild(renderRow(entry));
   refreshChrome();
@@ -81,8 +84,8 @@ function relTime(ts: number): string {
 }
 
 async function deleteEntry(id: string): Promise<void> {
-  const wm_memory = (await kv.get<MemoryEntry[]>(KEYS.memory)) ?? [];
-  const next = wm_memory.filter(e => e.id !== id);
+  const next = cachedMemory.filter(e => e.id !== id);
+  cachedMemory = next;
   await kv.set(KEYS.memory, next);
 }
 
@@ -93,8 +96,7 @@ clearBtn.addEventListener('click', async () => {
 });
 
 exportBtn.addEventListener('click', async () => {
-  const wm_memory = (await kv.get<MemoryEntry[]>(KEYS.memory)) ?? [];
-  const md = toMarkdown(wm_memory);
+  const md = toMarkdown(cachedMemory);
   const blob = new Blob([md], { type: 'text/markdown' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

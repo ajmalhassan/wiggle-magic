@@ -15,6 +15,7 @@ export interface ActionRegistry {
   getSlashOptions(ctx: ActionContext): ActionDef[];
   getModifiers(): ModifierDef[];
   getLibrary(): ActionDef[];
+  getHeroOrder(): string[];
   isLibraryEnabled(id: string): boolean;
   rankForContext(ctx: ActionContext, candidates: ActionDef[]): ActionDef[];
   enableFromLibrary(id: string): Promise<ValidateResult>;
@@ -76,6 +77,8 @@ export async function createRegistry(kv: KVStore): Promise<ActionRegistry> {
     getModifiers() { return BUILTIN_MODIFIERS; },
 
     getLibrary() { return LIBRARY_ACTIONS; },
+
+    getHeroOrder() { return [...heroOrder]; },
 
     isLibraryEnabled(id) { return enabledLibrary.has(id); },
 
