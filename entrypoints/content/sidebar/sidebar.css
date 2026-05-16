@@ -383,3 +383,33 @@ html.wm-sidebar-open {
   font-size: 12px;
   cursor: pointer;
 }
+
+/* ── Banners ── */
+#wm-sidebar .sidebar-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(125, 249, 255, 0.06);
+  border: 1px solid rgba(125, 249, 255, 0.12);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #b3d9ff;
+}
+#wm-sidebar .sidebar-banner.trim {
+  background: rgba(255,255,255,0.04);
+  color: #8a93a6;
+  justify-content: center;
+}
+#wm-sidebar .banner-action {
+  padding: 3px 10px;
+  background: transparent;
+  border: 1px solid rgba(125, 249, 255, 0.3);
+  border-radius: 999px;
+  color: #7df9ff;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+#wm-sidebar .banner-action:hover { background: rgba(125, 249, 255, 0.10); }
