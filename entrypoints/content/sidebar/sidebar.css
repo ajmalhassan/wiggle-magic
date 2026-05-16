@@ -397,11 +397,6 @@ html.wm-sidebar-open {
   font-size: 12px;
   color: #b3d9ff;
 }
-#wm-sidebar .sidebar-banner.trim {
-  background: rgba(255,255,255,0.04);
-  color: #8a93a6;
-  justify-content: center;
-}
 #wm-sidebar .banner-action {
   padding: 3px 10px;
   background: transparent;

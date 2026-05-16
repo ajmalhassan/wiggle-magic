@@ -20,9 +20,9 @@ export interface ThreadOperations {
  * `actionId` field added in Plan 2.
  */
 function mapToLegacyAction(actionId: string, modifiers: string[]): MemoryAction {
-  if (modifiers.includes('bullets')) return 'bullets';
   if (actionId === 'summarize') return 'summary';
   if (actionId === 'compare') return 'compare';
+  if (modifiers.includes('bullets')) return 'bullets';
   return 'ask';
 }
 

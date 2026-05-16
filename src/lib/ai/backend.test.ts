@@ -1,13 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { probeAvailability, activeBackend } from './backend';
-
-describe('probeAvailability', () => {
-  it('returns available=false when globals are missing (node env)', () => {
-    expect(probeAvailability('summarizer').available).toBe(false);
-    expect(probeAvailability('prompt').available).toBe(false);
-    expect(probeAvailability('translator').available).toBe(false);
-  });
-});
+import { activeBackend } from './backend';
+import { createPromptAdapter } from './adapters/prompt';
 
 describe('activeBackend', () => {
   it('returns nano when backend=nano', () => {
@@ -18,5 +11,12 @@ describe('activeBackend', () => {
     expect(activeBackend({ backend: 'cloud', provider: 'openai' })).toBe('openai');
     expect(activeBackend({ backend: 'cloud', provider: 'anthropic' })).toBe('anthropic');
     expect(activeBackend({ backend: 'cloud', provider: 'gemini' })).toBe('gemini');
+  });
+});
+
+describe('prompt adapter availability', () => {
+  it('returns false when LanguageModel global is absent (node env)', () => {
+    const adapter = createPromptAdapter();
+    expect(adapter.available()).toBe(false);
   });
 });

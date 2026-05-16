@@ -14,9 +14,3 @@ export function renderRestorationBanner(onStartFresh: () => void): HTMLElement {
   return el;
 }
 
-export function renderTrimNotice(): HTMLElement {
-  const el = document.createElement('div');
-  el.className = 'sidebar-banner trim';
-  el.textContent = 'Older turns trimmed';
-  return el;
-}
