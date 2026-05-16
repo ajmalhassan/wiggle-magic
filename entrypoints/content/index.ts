@@ -175,6 +175,9 @@ export default defineContentScript({
     let viewportShiftPending = false;
     let coachSeen: boolean | null = null;  // null = unknown, true/false = cached
 
+    let prevHtmlOverflow = '';
+    let scrollRafPending = false;
+
     let currentAnswer = '';
     let currentQuestion = '';
     let askController: AbortController | null = null;
@@ -613,6 +616,7 @@ export default defineContentScript({
 
     function showSheet(payloads: Payload[]): void {
       picker.mode = 'sheet';
+      prevHtmlOverflow = document.documentElement.style.overflow;
       document.documentElement.style.overflow = 'hidden';
       cursor.classList.remove('visible');
       highlight.style.opacity = '0';
@@ -653,7 +657,7 @@ export default defineContentScript({
         for (const sel of picker.picks) sel.marker.remove();
         picker.picks.length = 0;
         document.body.classList.remove('wm-active');
-        document.documentElement.style.overflow = '';
+        document.documentElement.style.overflow = prevHtmlOverflow;
         samples.length = 0;
         lastHighlightEl = null;
         lastLeaf = null;
@@ -692,10 +696,10 @@ export default defineContentScript({
           }
           textNode.appendData(chunk);
           currentAnswer += chunk;
-          sheetBody.scrollTop = sheetBody.scrollHeight;
+          scrollSheetToBottom();
         });
         renderMarkdownInto(answerEl, currentAnswer);
-        sheetBody.scrollTop = sheetBody.scrollHeight;
+        scrollSheetToBottom();
         actionsEl.classList.add('show');
       } catch (err) {
         if (err && (err as Error).name === 'AbortError') return;
@@ -712,17 +716,31 @@ export default defineContentScript({
       }
     }
 
-    async function runSummarize(): Promise<void> {
+    function scrollSheetToBottom(): void {
+      if (scrollRafPending) return;
+      scrollRafPending = true;
+      requestAnimationFrame(() => {
+        scrollRafPending = false;
+        sheetBody.scrollTop = sheetBody.scrollHeight;
+      });
+    }
+
+    async function runHeroAction(
+      action: MemoryAction,
+      question: string,
+      placeholder: string,
+      invoke: (payloads: Payload[], signal: AbortSignal, onChunk: (chunk: string, isFirst: boolean) => void) => Promise<void>,
+    ): Promise<void> {
       if (picker.picks.length === 0 || askController) return;
       heroRowEl.hidden = true;
-      sheetState.activeAction = 'summary';
+      sheetState.activeAction = action;
       sheetState.stale = false;
       staleBanner.hidden = true;
 
-      currentQuestion = 'Summarize selection';
+      currentQuestion = question;
       currentAnswer = '';
       answerEl.classList.remove('empty');
-      answerEl.innerHTML = '<span class="placeholder">Summarizing…</span>';
+      answerEl.innerHTML = `<span class="placeholder">${placeholder}</span>`;
       actionsEl.classList.remove('show');
       savedMsg.style.display = 'none';
       answerSavedThisRun = false;
@@ -731,76 +749,51 @@ export default defineContentScript({
       const textNode = document.createTextNode('');
       try {
         const payloads = picker.picks.map(p => p.payload);
-        await summarizePicks(payloads, askController.signal, (chunk, isFirst) => {
+        await invoke(payloads, askController.signal, (chunk, isFirst) => {
           if (isFirst) {
             answerEl.replaceChildren(textNode);
             answerEl.classList.add('streaming');
           }
           textNode.appendData(chunk);
           currentAnswer += chunk;
-          sheetBody.scrollTop = sheetBody.scrollHeight;
+          scrollSheetToBottom();
         });
         renderMarkdownInto(answerEl, currentAnswer);
-        sheetBody.scrollTop = sheetBody.scrollHeight;
+        scrollSheetToBottom();
         actionsEl.classList.add('show');
       } catch (err) {
         if (err && (err as Error).name === 'AbortError') return;
         console.error('[wiggle-magic] action failed:', err);
         sheetState.activeAction = null;
         heroRowEl.hidden = false;
-        showError(classifyError(err, runSummarize));
+        showError(classifyError(err, () => runHeroAction(action, question, placeholder, invoke)));
       } finally {
         answerEl.classList.remove('streaming');
         askController = null;
       }
     }
 
-    async function runBullets(): Promise<void> {
-      if (picker.picks.length === 0 || askController) return;
-      heroRowEl.hidden = true;
-      sheetState.activeAction = 'bullets';
-      sheetState.stale = false;
-      staleBanner.hidden = true;
+    function runSummarize(): Promise<void> {
+      return runHeroAction(
+        'summary',
+        'Summarize selection',
+        'Summarizing…',
+        (payloads, signal, onChunk) => summarizePicks(payloads, signal, onChunk),
+      );
+    }
 
-      currentQuestion = 'Bulletize selection';
-      currentAnswer = '';
-      answerEl.classList.remove('empty');
-      answerEl.innerHTML = '<span class="placeholder">Bulletizing…</span>';
-      actionsEl.classList.remove('show');
-      savedMsg.style.display = 'none';
-      answerSavedThisRun = false;
-
-      askController = new AbortController();
-      const textNode = document.createTextNode('');
-      try {
-        const payloads = picker.picks.map(p => p.payload);
-        await askAI(
+    function runBullets(): Promise<void> {
+      return runHeroAction(
+        'bullets',
+        'Bulletize selection',
+        'Bulletizing…',
+        (payloads, signal, onChunk) => askAI(
           'Reformat these selections as a concise Markdown bulleted list of the main points. One bullet per key point. No preamble, no headings.',
           payloads,
-          askController.signal,
-          (chunk, isFirst) => {
-            if (isFirst) {
-              answerEl.replaceChildren(textNode);
-              answerEl.classList.add('streaming');
-            }
-            textNode.appendData(chunk);
-            currentAnswer += chunk;
-            sheetBody.scrollTop = sheetBody.scrollHeight;
-          },
-        );
-        renderMarkdownInto(answerEl, currentAnswer);
-        sheetBody.scrollTop = sheetBody.scrollHeight;
-        actionsEl.classList.add('show');
-      } catch (err) {
-        if (err && (err as Error).name === 'AbortError') return;
-        console.error('[wiggle-magic] action failed:', err);
-        sheetState.activeAction = null;
-        heroRowEl.hidden = false;
-        showError(classifyError(err, runBullets));
-      } finally {
-        answerEl.classList.remove('streaming');
-        askController = null;
-      }
+          signal,
+          onChunk,
+        ),
+      );
     }
 
     async function summarizePicks(
@@ -1286,7 +1279,7 @@ export default defineContentScript({
       pick,
       resolveTarget,
     };
-    const sheet   = { show: showSheet, close: closeSheet, askAI: submitAsk, save: saveCurrentAnswer, copy: copyCurrentAnswer, onChipRemove: onChipRemoveInSheet, runSummarize, runBullets, rerun, showError };
+    const sheet   = { show: showSheet, close: closeSheet, askAI: submitAsk, save: saveCurrentAnswer, copy: copyCurrentAnswer, onChipRemove: onChipRemoveInSheet, rerun, showError };
 
     // ---------- bindings ----------
     document.addEventListener('mousemove', wiggle.onMove, { passive: true });

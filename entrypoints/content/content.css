@@ -384,19 +384,21 @@ body.wm-active #wm-edge { opacity: 1; }
 #wm-sheet .ask button:hover { filter: brightness(1.08); }
 #wm-sheet .ask button:disabled { opacity: 0.55; cursor: not-allowed; filter: grayscale(0.3); }
 #wm-sheet .ask .sparkle { width: 12px; height: 12px; }
+#wm-sheet .icon-btn,
 #wm-sheet .close {
+  appearance: none;
   background: transparent;
   border: 0;
   color: #8a93a6;
   cursor: pointer;
-  font-size: 20px;
-  line-height: 1;
   width: 28px; height: 28px;
   border-radius: 6px;
   display: inline-flex; align-items: center; justify-content: center;
   padding: 0;
 }
+#wm-sheet .icon-btn:hover,
 #wm-sheet .close:hover { color: #e7ecf3; background: rgba(255,255,255,0.06); }
+#wm-sheet .close { font-size: 20px; line-height: 1; }
 
 #wm-sheet.sidebar {
   left: auto;
@@ -409,9 +411,6 @@ body.wm-active #wm-edge { opacity: 1; }
   max-height: none;
 }
 #wm-sheet.sidebar.expanded {
-  width: 380px;
-  height: auto;
-  max-height: none;
   border-radius: 18px;
 }
 #wm-sheet.sidebar.visible {
@@ -423,18 +422,6 @@ body.wm-active #wm-edge { opacity: 1; }
   top: 10px; right: 12px;
   display: flex; align-items: center; gap: 4px;
 }
-#wm-sheet .icon-btn {
-  appearance: none;
-  background: transparent;
-  border: 0;
-  color: #8a93a6;
-  cursor: pointer;
-  width: 28px; height: 28px;
-  border-radius: 6px;
-  display: inline-flex; align-items: center; justify-content: center;
-  padding: 0;
-}
-#wm-sheet .icon-btn:hover { color: #e7ecf3; background: rgba(255,255,255,0.06); }
 
 #wm-toast {
   position: fixed; left: 50%; bottom: 32px; transform: translate(-50%, 20px);
