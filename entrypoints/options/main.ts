@@ -1,4 +1,9 @@
-import type { WmSettings } from '@/src/lib/types';
+import type { WmSettings, SettingsBackend } from '@/src/lib/types';
+import { DEFAULT_WM_SETTINGS } from '@/src/lib/types';
+import { chromeSyncKV } from '@/src/lib/storage';
+import { KEYS } from '@/src/lib/storage-keys';
+
+const syncKv = chromeSyncKV();
 
 const tabs = document.querySelectorAll<HTMLButtonElement>('.options-tab');
 const sections = document.querySelectorAll<HTMLElement>('section.tab');
@@ -40,23 +45,23 @@ function updateHint(): void {
 providerEl.addEventListener('change', updateHint);
 
 async function load(): Promise<void> {
-  const got = await chrome.storage.sync.get(['wm_settings', 'wm_welcomed']) as {
-    wm_settings?: Settings;
-    wm_welcomed?: boolean;
-  };
-  const wm_settings = got.wm_settings ?? {};
-  backendEl.value  = wm_settings.backend  || 'auto';
-  providerEl.value = wm_settings.provider || 'openai';
-  keyEl.value      = wm_settings.apiKey   || '';
-  modelEl.value    = wm_settings.model    || '';
+  const [loadedSettings, welcomed] = await Promise.all([
+    syncKv.get<Settings>(KEYS.settings),
+    syncKv.get<boolean>(KEYS.welcomed),
+  ]);
+  const wm_settings: WmSettings = { ...DEFAULT_WM_SETTINGS, ...loadedSettings };
+  backendEl.value  = wm_settings.backend  as SettingsBackend;
+  providerEl.value = wm_settings.provider;
+  keyEl.value      = wm_settings.apiKey;
+  modelEl.value    = wm_settings.model;
   updateHint();
-  if (!got.wm_welcomed) welcomeEl.hidden = false;
+  if (!welcomed) welcomeEl.hidden = false;
   checkNano();
 }
 
 async function dismissWelcome(): Promise<void> {
   welcomeEl.hidden = true;
-  await chrome.storage.sync.set({ wm_welcomed: true });
+  await syncKv.set(KEYS.welcomed, true);
 }
 welcomeGo.addEventListener('click', async () => {
   await dismissWelcome();
@@ -125,13 +130,13 @@ dlBtn.addEventListener('click', async () => {
 });
 
 saveBtn.addEventListener('click', async () => {
-  const wm_settings: Settings = {
-    backend:  backendEl.value,
+  const wm_settings: WmSettings = {
+    backend:  backendEl.value as SettingsBackend,
     provider: providerEl.value,
     apiKey:   keyEl.value.trim(),
     model:    modelEl.value.trim(),
   };
-  await chrome.storage.sync.set({ wm_settings });
+  await syncKv.set(KEYS.settings, wm_settings);
   savedMsg.classList.add('show');
   setTimeout(() => savedMsg.classList.remove('show'), 1400);
 });

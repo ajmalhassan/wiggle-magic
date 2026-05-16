@@ -31,6 +31,29 @@ export function chromeKV(): KVStore {
 }
 
 /**
+ * chrome.storage.sync variant of chromeKV. Used for settings + onboarding
+ * flags that should follow the user across devices.
+ */
+export function chromeSyncKV(): KVStore {
+  return {
+    async get<T>(key: string): Promise<T | null> {
+      const out = await chrome.storage.sync.get(key);
+      return (out[key] as T | undefined) ?? null;
+    },
+    async set<T>(key: string, value: T): Promise<void> {
+      await chrome.storage.sync.set({ [key]: value });
+    },
+    async remove(key: string): Promise<void> {
+      await chrome.storage.sync.remove(key);
+    },
+    async keys(prefix: string): Promise<string[]> {
+      const all = await chrome.storage.sync.get(null);
+      return Object.keys(all).filter(k => k.startsWith(prefix));
+    },
+  };
+}
+
+/**
  * Test adapter: in-memory map. Safe to instantiate per-test.
  */
 export function memoryKV(): KVStore {

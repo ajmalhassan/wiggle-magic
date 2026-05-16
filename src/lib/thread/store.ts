@@ -1,20 +1,17 @@
 // src/lib/thread/store.ts
 import type { Thread, ThreadIndexEntry } from '../types/thread';
 import type { KVStore } from '../storage';
-
-const PREFIX = 'wm:thread:';
-const ARCHIVE_PREFIX = 'wm:thread-archive:';
-const INDEX_KEY = 'wm:thread-index';
+import { KEYS } from '../storage-keys';
 
 export const MAX_ACTIVE_THREADS = 50;
 export const RESTORATION_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;     // 7 days
 
 function key(origin: string, pathname: string): string {
-  return `${PREFIX}${origin}${pathname}`;
+  return `${KEYS.threadPrefix}${origin}${pathname}`;
 }
 
 function archiveKey(threadId: string): string {
-  return `${ARCHIVE_PREFIX}${threadId}`;
+  return `${KEYS.threadArchivePrefix}${threadId}`;
 }
 
 export interface ThreadStore {
@@ -27,11 +24,11 @@ export interface ThreadStore {
 
 export function createThreadStore(kv: KVStore): ThreadStore {
   async function readIndex(): Promise<ThreadIndexEntry[]> {
-    return (await kv.get<ThreadIndexEntry[]>(INDEX_KEY)) ?? [];
+    return (await kv.get<ThreadIndexEntry[]>(KEYS.threadIndex)) ?? [];
   }
 
   async function writeIndex(idx: ThreadIndexEntry[]): Promise<void> {
-    await kv.set(INDEX_KEY, idx);
+    await kv.set(KEYS.threadIndex, idx);
   }
 
   async function evictIfNeeded(): Promise<void> {

@@ -1,11 +1,13 @@
 import './content.css';
 import type { PickRef, UserTurn, MagicTurn, Thread } from '@/src/lib/types/thread';
 import type { WmSettings } from '@/src/lib/types';
+import { DEFAULT_WM_SETTINGS } from '@/src/lib/types';
 import { createWiggleDetector, DEFAULT_WIGGLE_OPTS } from '@/src/lib/picker/detect-wiggle';
 import { resolveTarget } from '@/src/lib/picker/resolve-target';
 import { classifyPick } from '@/src/lib/picker/classify-pick';
 import { extractPayload } from '@/src/lib/picker/extract-payload';
-import { chromeKV } from '@/src/lib/storage';
+import { chromeKV, chromeSyncKV } from '@/src/lib/storage';
+import { KEYS } from '@/src/lib/storage-keys';
 import { createRegistry } from '@/src/lib/actions/registry';
 import { createThreadStore } from '@/src/lib/thread/store';
 import { createThreadOperations } from '@/src/lib/thread/operations';
@@ -35,6 +37,7 @@ export default defineContentScript({
     document.documentElement.appendChild(root);
 
     const kv = chromeKV();
+    const syncKv = chromeSyncKV();
     const registry = await createRegistry(kv);
     const threadStore = createThreadStore(kv);
     const threadOps = createThreadOperations(threadStore, kv);
@@ -42,7 +45,7 @@ export default defineContentScript({
     const state = createState();
 
     chrome.storage.onChanged.addListener((changes, area) => {
-      if (area === 'sync' && changes['wm_settings']) {
+      if (area === 'sync' && changes[KEYS.settings]) {
         cachedSettings = null;
       }
     });
@@ -93,7 +96,7 @@ export default defineContentScript({
     async function maybeShowCoach(): Promise<void> {
       if (coachSeen) return;
       if (coachSeen === null) {
-        const { 'wm:first-run': seen } = await chrome.storage.local.get('wm:first-run') as { 'wm:first-run'?: boolean };
+        const seen = await kv.get<boolean>(KEYS.firstRun);
         coachSeen = !!seen;
         if (coachSeen) return;
       }
@@ -105,7 +108,7 @@ export default defineContentScript({
       coachSeen = true;
       coach.classList.remove('visible');
       setTimeout(() => { coach.hidden = true; }, 220);
-      await chrome.storage.local.set({ 'wm:first-run': true });
+      await kv.set(KEYS.firstRun, true);
     }
 
     coach.querySelector('#wm-coach-dismiss')?.addEventListener('click', dismissCoach);
@@ -213,8 +216,8 @@ export default defineContentScript({
     let cachedSettings: WmSettings | null = null;
     async function getSettings(): Promise<WmSettings> {
       if (cachedSettings) return cachedSettings;
-      const out = await chrome.storage.sync.get('wm_settings') as { wm_settings?: WmSettings };
-      cachedSettings = out.wm_settings ?? { backend: 'nano', provider: '', apiKey: '', model: '' };
+      const loaded = await syncKv.get<WmSettings>(KEYS.settings);
+      cachedSettings = { ...DEFAULT_WM_SETTINGS, ...loaded };
       return cachedSettings;
     }
 

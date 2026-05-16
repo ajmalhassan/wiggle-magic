@@ -2,12 +2,21 @@
 // Lives outside any entrypoint so the same shape can be imported by content,
 // popup, and options without each redeclaring it.
 
+export type SettingsBackend = 'auto' | 'nano' | 'byok';
+
 export interface WmSettings {
-  backend: string;
+  backend: SettingsBackend;
   provider: string;
   apiKey: string;
   model: string;
 }
+
+export const DEFAULT_WM_SETTINGS: WmSettings = {
+  backend: 'auto',
+  provider: 'openai',
+  apiKey: '',
+  model: '',
+};
 
 // SavedSelection is the persisted subset of a content-script Payload — see
 // the entry build site in entrypoints/content/index.ts (saveCurrentAnswer).

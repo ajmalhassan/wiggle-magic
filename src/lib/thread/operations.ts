@@ -3,13 +3,9 @@ import type { Thread, Turn, MagicTurn, UserTurn, PickRef } from '../types/thread
 import type { ThreadStore } from './store';
 import type { KVStore } from '../storage';
 import type { MemoryEntry, MemoryAction, SavedSelection } from '../types';
+import { KEYS } from '../storage-keys';
 
 export const MAX_TURNS_PER_THREAD = 20;
-
-// Underscore form, not colon — matches the key the popup and content script
-// already read/write. Changing to a colon-namespaced key would split memory
-// entries across two storage slots and break the popup.
-const MEMORY_KEY = 'wm_memory';
 
 export interface ThreadOperations {
   appendTurn(origin: string, pathname: string, turn: Turn): Promise<Thread>;
@@ -85,9 +81,9 @@ export function createThreadOperations(store: ThreadStore, kv: KVStore): ThreadO
         selections: magic.sources.map(pickRefToSavedSelection),
         action: mapToLegacyAction(user?.actionId ?? 'ask', user?.modifiers ?? []),
       };
-      const existing = (await kv.get<MemoryEntry[]>(MEMORY_KEY)) ?? [];
+      const existing = (await kv.get<MemoryEntry[]>(KEYS.memory)) ?? [];
       existing.push(entry);
-      await kv.set(MEMORY_KEY, existing);
+      await kv.set(KEYS.memory, existing);
     },
   };
 }

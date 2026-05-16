@@ -1,6 +1,8 @@
 // src/lib/types/thread.ts
 import type { Payload, PickTag } from './payload';
 
+export type ErrorCode = 'action-missing' | 'nano-unavailable' | 'stream-failed';
+
 export type ThreadId = string;      // `${origin}${pathname}`
 export type TurnId = string;        // ulid
 
@@ -33,7 +35,7 @@ export interface MagicTurn {
   answer: string;
   sources: PickRef[];
   status: 'streaming' | 'done' | 'error';
-  errorCode?: string;
+  errorCode?: ErrorCode;
   backend: Backend;
   ts: number;
 }
