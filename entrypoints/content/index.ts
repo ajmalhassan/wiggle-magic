@@ -425,9 +425,13 @@ export default defineContentScript({
         if (mode === 'selecting') { e.preventDefault(); deactivate(); }
         else if (mode === 'sidebar+selecting') {
           e.preventDefault();
-          state.setMode('sidebar');
-          pill.unmount();
           stagingPicks = [];
+          pill.unmount();
+          overlay.setCursor(cursorX, cursorY, false);
+          overlay.setHighlight(null, false);
+          overlay.setTag(null, '');
+          document.body.classList.remove('wm-active');
+          state.setMode('sidebar');
         }
         else if (mode === 'sidebar') { e.preventDefault(); state.emit('sidebar:close', {}); }
       } else if (e.altKey && e.shiftKey && e.key.toLowerCase() === 'm') {
