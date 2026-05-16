@@ -278,3 +278,108 @@ html.wm-sidebar-open {
   font-size: 11px;
   color: #8a93a6;
 }
+
+/* ── Magic turn ── */
+#wm-sidebar .turn-magic .turn-header .role-label { color: #ff7ad9; }
+#wm-sidebar .turn-body {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #e7ecf3;
+}
+#wm-sidebar .turn-body.streaming::after {
+  content: '▌';
+  animation: wm-blink 1s steps(2) infinite;
+}
+@keyframes wm-blink { to { opacity: 0; } }
+#wm-sidebar .turn-body p { margin: 0 0 8px; }
+#wm-sidebar .turn-body > *:first-child { margin-top: 0; }
+#wm-sidebar .turn-body > *:last-child { margin-bottom: 0; }
+#wm-sidebar .turn-body strong { color: #fff; }
+#wm-sidebar .turn-body code {
+  background: rgba(255,255,255,0.08);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+#wm-sidebar .turn-body pre {
+  background: rgba(0,0,0,0.3);
+  padding: 8px;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+#wm-sidebar .turn-body ul, #wm-sidebar .turn-body ol {
+  margin: 4px 0 8px;
+  padding-left: 20px;
+}
+
+#wm-sidebar .turn-sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(255,255,255,0.06);
+}
+#wm-sidebar .sources-label {
+  font-size: 11px;
+  color: #8a93a6;
+  margin-right: 4px;
+}
+
+#wm-sidebar .stale-badge {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 3px 8px;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.30);
+  border-radius: 999px;
+  font-size: 11px;
+  color: #fbbf24;
+}
+
+#wm-sidebar .turn-footer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+#wm-sidebar .footer-btn {
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  color: #8a93a6;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+#wm-sidebar .footer-btn:hover {
+  background: rgba(125, 249, 255, 0.06);
+  color: #e7ecf3;
+  border-color: rgba(125, 249, 255, 0.2);
+}
+#wm-sidebar .saved-msg {
+  font-size: 11px;
+  color: #4ade80;
+  margin-left: 6px;
+}
+
+#wm-sidebar .turn-error {
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.20);
+  border-radius: 8px;
+}
+#wm-sidebar .turn-error p { margin: 0 0 6px; color: #fca5a5; font-size: 12px; }
+#wm-sidebar .turn-error-action {
+  padding: 3px 8px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 0;
+  border-radius: 6px;
+  color: #fca5a5;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
