@@ -82,6 +82,15 @@ describe('ActionRegistry', () => {
     expect(r.getById('my-act')).toBeTruthy();
   });
 
+  it('rankForContext orders arbitrary candidate sets by tag-match against context', async () => {
+    const r = await createRegistry(memoryKV());
+    const ctx = makeContext({ picks: [makePick({ tags: ['code'] })] });
+    // ask + summarize: summarize matches text type, ask has no tags.
+    // Order by score (1 for summarize, 0 for ask) then label.
+    const out = r.rankForContext(ctx, [r.getById('ask')!, r.getById('summarize')!]);
+    expect(out.map(a => a.id)).toEqual(['summarize', 'ask']);
+  });
+
   it('registerUser rejects invalid action', async () => {
     const r = await createRegistry(memoryKV());
     const res = await r.registerUser({

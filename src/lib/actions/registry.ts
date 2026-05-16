@@ -5,7 +5,7 @@ import { BUILTIN_CORE_ACTIONS, BUILTIN_MODIFIERS, BUILTIN_CORE_IDS } from './bui
 import { LIBRARY_ACTIONS, LIBRARY_IDS } from './library';
 import { createActionsStorage } from './storage';
 import { isAvailable } from './availability';
-import { rankHeroes } from './ranker';
+import { rankHeroes, tagScore } from './ranker';
 import { validateAction } from './validate';
 
 export interface ActionRegistry {
@@ -16,6 +16,7 @@ export interface ActionRegistry {
   getSlashOptions(ctx: ActionContext): ActionDef[];
   getModifiers(): ModifierDef[];
   getLibrary(): ActionDef[];
+  rankForContext(ctx: ActionContext, candidates: ActionDef[]): ActionDef[];
   // Mutate
   enableFromLibrary(id: string): Promise<ValidateResult>;
   disableFromLibrary(id: string): Promise<void>;
@@ -70,6 +71,14 @@ export async function createRegistry(kv: KVStore): Promise<ActionRegistry> {
     getModifiers() { return BUILTIN_MODIFIERS; },
 
     getLibrary() { return LIBRARY_ACTIONS; },
+
+    rankForContext(ctx, candidates) {
+      return [...candidates].sort((a, b) => {
+        const diff = tagScore(b, ctx) - tagScore(a, ctx);
+        if (diff !== 0) return diff;
+        return a.label.localeCompare(b.label);
+      });
+    },
 
     async enableFromLibrary(id) {
       if (!LIBRARY_IDS.has(id)) {

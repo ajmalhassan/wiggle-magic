@@ -9,7 +9,7 @@ export interface RankedHeroes {
 
 export const MAX_VISIBLE_HEROES = 4;
 
-function tagScore(def: ActionDef, ctx: ActionContext): number {
+export function tagScore(def: ActionDef, ctx: ActionContext): number {
   const tags = def.tags;
   if (!tags) return 0;
   let score = 0;
