@@ -4,6 +4,7 @@ import type { ActionRegistry } from '@/src/lib/actions/registry';
 import type { ActionDef, ActionContext } from '@/src/lib/types/action';
 import type { PickRef } from '@/src/lib/types/thread';
 import type { SlashMenu } from './slash-menu';
+import { escapeHtml } from '@/src/lib/dom-utils';
 import { renderChip } from './chip';
 
 export interface Composer {
@@ -74,7 +75,7 @@ export function createComposer(
     b.className = 'hero-btn';
     b.type = 'button';
     b.dataset.actionId = a.id;
-    b.innerHTML = `${a.icon ?? '✦'} ${escapeHtml(a.label)}`;
+    b.innerHTML = `${escapeHtml(a.icon ?? '✦')} ${escapeHtml(a.label)}`;
     b.addEventListener('click', () => submit(a, undefined));
     return b;
   }
@@ -149,8 +150,3 @@ export function createComposer(
   };
 }
 
-function escapeHtml(s: string): string {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}

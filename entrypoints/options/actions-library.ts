@@ -1,6 +1,7 @@
 // entrypoints/options/actions-library.ts
 import { chromeKV } from '@/src/lib/storage';
 import { createRegistry } from '@/src/lib/actions/registry';
+import { escapeHtml } from '@/src/lib/dom-utils';
 import type { ActionDef } from '@/src/lib/types/action';
 
 export async function initActionsUI() {
@@ -40,8 +41,8 @@ export async function initActionsUI() {
   function renderActionRow(a: ActionDef): HTMLElement {
     const li = document.createElement('li');
     li.innerHTML = `
-      <span class="action-label">${escape(a.icon ?? '✦')} ${escape(a.label)}</span>
-      <span class="action-desc">${escape(a.description ?? '')}</span>
+      <span class="action-label">${escapeHtml(a.icon ?? '✦')} ${escapeHtml(a.label)}</span>
+      <span class="action-desc">${escapeHtml(a.description ?? '')}</span>
       <span class="action-toggle enabled">enabled</span>
     `;
     return li;
@@ -50,8 +51,8 @@ export async function initActionsUI() {
   function renderLibraryRow(a: ActionDef, enabled: boolean): HTMLElement {
     const li = document.createElement('li');
     li.innerHTML = `
-      <span class="action-label">${escape(a.icon ?? '✦')} ${escape(a.label)}</span>
-      <span class="action-desc">${escape(a.description ?? '')}</span>
+      <span class="action-label">${escapeHtml(a.icon ?? '✦')} ${escapeHtml(a.label)}</span>
+      <span class="action-desc">${escapeHtml(a.description ?? '')}</span>
       <button class="action-toggle ${enabled ? 'enabled' : ''}" type="button">${enabled ? 'enabled' : 'enable'}</button>
     `;
     const toggle = li.querySelector<HTMLButtonElement>('.action-toggle')!;
@@ -81,7 +82,7 @@ export async function initActionsUI() {
     li.innerHTML = `
       <button class="arrow-btn up" type="button" aria-label="Move up" ${idx === 0 ? 'disabled' : ''}>↑</button>
       <button class="arrow-btn down" type="button" aria-label="Move down" ${idx === heroIds.length - 1 ? 'disabled' : ''}>↓</button>
-      <span class="action-label">${escape(a.icon ?? '✦')} ${escape(a.label)}</span>
+      <span class="action-label">${escapeHtml(a.icon ?? '✦')} ${escapeHtml(a.label)}</span>
     `;
     const up = li.querySelector<HTMLButtonElement>('.up')!;
     const down = li.querySelector<HTMLButtonElement>('.down')!;
@@ -91,7 +92,6 @@ export async function initActionsUI() {
   }
 
   function swap<T>(arr: T[], i: number, j: number) { const t = arr[i]; arr[i] = arr[j]; arr[j] = t; }
-  function escape(s: string): string { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
   renderCore();
   renderLibrary();

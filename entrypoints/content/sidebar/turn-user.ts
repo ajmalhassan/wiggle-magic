@@ -1,6 +1,7 @@
 // entrypoints/content/sidebar/turn-user.ts
 import type { UserTurn } from '@/src/lib/types/thread';
 import type { ActionRegistry } from '@/src/lib/actions/registry';
+import { escapeHtml } from '@/src/lib/dom-utils';
 import { renderChip } from './chip';
 
 export function renderUserTurn(turn: UserTurn, registry: ActionRegistry): HTMLElement {
@@ -17,7 +18,7 @@ export function renderUserTurn(turn: UserTurn, registry: ActionRegistry): HTMLEl
   header.innerHTML = `
     <span class="visually-hidden">From you</span>
     <span class="role-label">You</span>
-    <span class="action-label">${escape(actionLabel)}</span>
+    <span class="action-label">${escapeHtml(actionLabel)}</span>
   `;
   card.appendChild(header);
 
@@ -45,8 +46,3 @@ export function renderUserTurn(turn: UserTurn, registry: ActionRegistry): HTMLEl
   return card;
 }
 
-function escape(s: string): string {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}

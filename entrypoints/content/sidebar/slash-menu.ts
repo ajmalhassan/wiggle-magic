@@ -1,6 +1,7 @@
 // entrypoints/content/sidebar/slash-menu.ts
 import type { ActionRegistry } from '@/src/lib/actions/registry';
 import type { ActionDef, ActionContext } from '@/src/lib/types/action';
+import { escapeHtml } from '@/src/lib/dom-utils';
 
 export interface SlashMenu {
   setContext(ctx: ActionContext): void;
@@ -40,7 +41,7 @@ export function createSlashMenu(
       item.innerHTML = `
         <span class="slash-icon">${a.icon ?? '✦'}</span>
         <span class="slash-label">/${a.id}</span>
-        <span class="slash-desc">${escape(a.description ?? a.label)}</span>
+        <span class="slash-desc">${escapeHtml(a.description ?? a.label)}</span>
       `;
       item.addEventListener('mouseenter', () => { highlighted = i; render(); });
       root.appendChild(item);
@@ -86,8 +87,3 @@ export function createSlashMenu(
   };
 }
 
-function escape(s: string): string {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}

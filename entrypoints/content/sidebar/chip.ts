@@ -51,7 +51,7 @@ export function renderChip(p: PickRef, opts: ChipOpts = {}): HTMLElement {
   return chip;
 }
 
-function iconFor(p: PickRef): string {
+export function iconFor(p: PickRef): string {
   if (p.payload.image) return '🖼';
   if (p.payload.link) return '🔗';
   if (p.tags.includes('code')) return '⌨';

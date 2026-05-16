@@ -1,6 +1,7 @@
 // entrypoints/content/sidebar/turn-magic.ts
 import type { MagicTurn } from '@/src/lib/types/thread';
 import type { ActionRegistry } from '@/src/lib/actions/registry';
+import { escapeHtml } from '@/src/lib/dom-utils';
 import { renderChip } from './chip';
 import { renderMarkdownInto } from '@/src/lib/markdown';
 
@@ -112,7 +113,7 @@ export function renderMagicTurn(
       errEl.className = 'turn-error';
       errEl.setAttribute('role', 'alert');
       errEl.dataset.code = code;
-      errEl.innerHTML = `<p>${escape(msg)}</p>`;
+      errEl.innerHTML = `<p>${escapeHtml(msg)}</p>`;
       if (primary) {
         const b = document.createElement('button');
         b.className = 'turn-error-action';
@@ -127,8 +128,3 @@ export function renderMagicTurn(
   };
 }
 
-function escape(s: string): string {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}

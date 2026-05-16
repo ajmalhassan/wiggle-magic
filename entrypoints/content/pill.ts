@@ -1,5 +1,7 @@
 // entrypoints/content/pill.ts
 import type { PickRef } from '@/src/lib/types/thread';
+import { escapeHtml } from '@/src/lib/dom-utils';
+import { iconFor } from './sidebar/chip';
 import './pill.css';
 
 export interface Pill {
@@ -32,19 +34,6 @@ export function createPill(parent: HTMLElement): Pill {
   const chipsEl = el.querySelector<HTMLElement>('.pill-chips')!;
   let removeFn: ((id: string) => void) | null = null;
 
-  function iconFor(p: PickRef): string {
-    if (p.payload.image) return '🖼';
-    if (p.payload.link) return '🔗';
-    if (p.tags.includes('code')) return '⌨';
-    if (p.payload.tag === 'button') return '→';
-    return '¶';
-  }
-  function escape(s: string): string {
-    const d = document.createElement('div');
-    d.textContent = s;
-    return d.innerHTML;
-  }
-
   return {
     el,
     mount() {
@@ -62,7 +51,7 @@ export function createPill(parent: HTMLElement): Pill {
         const chip = document.createElement('button');
         chip.className = 'pill-chip';
         chip.dataset.id = p.id;
-        chip.innerHTML = `<span class="chip-icon">${iconFor(p)}</span><span class="chip-label">${escape(p.label)}</span><span class="chip-x" aria-label="Remove">×</span>`;
+        chip.innerHTML = `<span class="chip-icon">${iconFor(p)}</span><span class="chip-label">${escapeHtml(p.label)}</span><span class="chip-x" aria-label="Remove">×</span>`;
         chip.querySelector('.chip-x')!.addEventListener('click', (e) => {
           e.stopPropagation();
           removeFn?.(p.id);
