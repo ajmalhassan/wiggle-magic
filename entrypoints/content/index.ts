@@ -2,7 +2,9 @@ import './content.css';
 import { renderMarkdownInto } from '@/src/lib/markdown';
 import { createWiggleDetector, DEFAULT_WIGGLE_OPTS } from '@/src/lib/picker/detect-wiggle';
 import { resolveTarget } from '@/src/lib/picker/resolve-target';
+import { extractPayload } from '@/src/lib/picker/extract-payload';
 import type { WmSettings, MemoryEntry, MemoryAction } from '@/src/lib/types';
+import type { Payload } from '@/src/lib/types/payload';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -11,18 +13,6 @@ export default defineContentScript({
   main() {
     // ---------- wiggle detector ----------
     const wiggle = createWiggleDetector(DEFAULT_WIGGLE_OPTS);
-
-    interface Payload {
-      selector: string;
-      tag: string;
-      text: string;
-      aria: Record<string, string>;
-      data: Record<string, string>;
-      image: { src: string; alt: string; naturalWidth?: number; naturalHeight?: number } | null;
-      link: { href: string; text: string } | null;
-      value: string | null;
-      rect: { x: number; y: number; width: number; height: number };
-    }
 
     type Mode = 'idle' | 'activating' | 'selecting' | 'sheet';
     interface Pick { id: string; el: Element; marker: HTMLDivElement; payload: Payload; label: string; }
@@ -411,43 +401,7 @@ export default defineContentScript({
     }
 
     function getPayload(el: Element): Payload {
-      const rect = el.getBoundingClientRect();
-      const aria: Record<string, string> = {};
-      const data: Record<string, string> = {};
-      for (const attr of el.attributes) {
-        if (attr.name.startsWith('aria-')) aria[attr.name] = attr.value;
-        if (attr.name.startsWith('data-')) data[attr.name.slice(5)] = attr.value;
-      }
-      if (el.getAttribute('role')) aria.role = el.getAttribute('role')!;
-      if (el.id)    aria.id    = el.id;
-      if ((el as HTMLElement).title) aria.title = (el as HTMLElement).title;
-
-      let image: Payload['image'] = null;
-      if (el.tagName === 'IMG') {
-        const img = el as HTMLImageElement;
-        image = { src: img.currentSrc || img.src, alt: img.alt,
-                  naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight };
-      } else {
-        const img = el.querySelector('img');
-        if (img) image = { src: img.currentSrc || img.src, alt: img.alt };
-      }
-
-      let link: Payload['link'] = null;
-      const a = el.tagName === 'A' ? el as HTMLAnchorElement : el.closest('a');
-      if (a && a.href) link = { href: a.href, text: (a.innerText || '').trim().slice(0, 200) };
-
-      let value: string | null = null;
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) {
-        value = (el as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement).value;
-      }
-
-      return {
-        selector: cssPath(el),
-        tag: el.tagName.toLowerCase(),
-        text: ((el as HTMLElement).innerText || el.textContent || '').trim().slice(0, 1000),
-        aria, data, image, link, value,
-        rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
-      };
+      return extractPayload(el, cssPath(el));
     }
 
     function commit(): void {
