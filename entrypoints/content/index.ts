@@ -177,7 +177,8 @@ export default defineContentScript({
     }
 
     async function getSettings(): Promise<WmSettings> {
-      return (await kv.get<WmSettings>('wm:settings')) ?? { backend: 'nano', provider: '', apiKey: '', model: '' };
+      const out = await chrome.storage.sync.get('wm_settings') as { wm_settings?: WmSettings };
+      return out.wm_settings ?? { backend: 'nano', provider: '', apiKey: '', model: '' };
     }
 
     function getPageMeta() {
