@@ -113,8 +113,12 @@ export async function createRegistry(kv: KVStore): Promise<ActionRegistry> {
       }
       userActions = userActions.filter(a => a.id !== id);
       enabledLibrary.delete(id);
+      heroOrder = heroOrder.filter(x => x !== id);
+      hidden.delete(id);
       await storage.saveUserActions(userActions);
       await storage.saveEnabledLibrary([...enabledLibrary]);
+      await storage.saveHeroOrder(heroOrder);
+      await storage.saveHidden([...hidden]);
       return { ok: true };
     },
 

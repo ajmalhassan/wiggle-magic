@@ -91,6 +91,28 @@ describe('ActionRegistry', () => {
     expect(out.map(a => a.id)).toEqual(['summarize', 'ask']);
   });
 
+  it('unregister clears the id from heroOrder and hidden', async () => {
+    const kv = memoryKV();
+    const r = await createRegistry(kv);
+    const def = {
+      id: 'doomed',
+      label: 'Doomed',
+      source: 'user' as const,
+      surface: ['hero', 'slash'] as ('hero' | 'slash')[],
+      acceptsFreeText: false,
+      acceptsModifiers: [],
+      availableWhen: { kind: 'always' as const },
+      prompt: { user: 'Doomed: {{selections}}' },
+      apiPreference: 'prompt' as const,
+    };
+    await r.registerUser(def);
+    await r.setHeroOrder(['summarize', 'doomed']);
+    await r.setHidden(['doomed']);
+    await r.unregister('doomed');
+    expect(await kv.get('wm:actions:hero')).toEqual(['summarize']);
+    expect(await kv.get('wm:actions:hidden')).toEqual([]);
+  });
+
   it('registerUser rejects invalid action', async () => {
     const r = await createRegistry(memoryKV());
     const res = await r.registerUser({
