@@ -232,3 +232,49 @@ html.wm-sidebar-open {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ── Turn cards ── */
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+#wm-sidebar .turn-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+#wm-sidebar .turn-user {
+  background: rgba(125, 249, 255, 0.04);
+  border-color: rgba(125, 249, 255, 0.10);
+}
+#wm-sidebar .turn-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #8a93a6;
+}
+#wm-sidebar .turn-header .role-label {
+  font-weight: 600;
+  color: #7df9ff;
+}
+#wm-sidebar .turn-header .action-label {
+  color: #e7ecf3;
+}
+#wm-sidebar .user-text { font-size: 13px; }
+#wm-sidebar .turn-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+#wm-sidebar .turn-modifiers {
+  font-size: 11px;
+  color: #8a93a6;
+}
