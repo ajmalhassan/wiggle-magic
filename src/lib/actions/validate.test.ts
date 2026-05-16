@@ -50,6 +50,30 @@ describe('validateAction', () => {
     if (!r.ok) expect(r.errors.some(e => e.field === 'surface')).toBe(true);
   });
 
+  it('rejects an availableWhen with unknown kind', () => {
+    const r = validateAction(makeAction({ availableWhen: { kind: 'bogus' } as any }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.some(e => e.field === 'availableWhen')).toBe(true);
+  });
+
+  it('rejects an availableWhen.minPicks without n', () => {
+    const r = validateAction(makeAction({ availableWhen: { kind: 'minPicks' } as any }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.some(e => e.field === 'availableWhen')).toBe(true);
+  });
+
+  it('rejects an availableWhen.and with non-array rules', () => {
+    const r = validateAction(makeAction({ availableWhen: { kind: 'and', rules: 'nope' } as any }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.some(e => e.field === 'availableWhen')).toBe(true);
+  });
+
+  it('rejects an availableWhen.pickTypesIncludes without types array', () => {
+    const r = validateAction(makeAction({ availableWhen: { kind: 'pickTypesIncludes' } as any }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.some(e => e.field === 'availableWhen')).toBe(true);
+  });
+
   it('accumulates multiple errors', () => {
     const r = validateAction(makeAction({ id: '', label: '', prompt: { user: '' } }));
     expect(r.ok).toBe(false);
