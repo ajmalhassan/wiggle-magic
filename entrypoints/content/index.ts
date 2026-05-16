@@ -273,9 +273,6 @@ export default defineContentScript({
         magic.answer = full;
         magic.status = 'done';
         handle.finalize(full);
-        if (currentThread) {
-          currentThread = await threadOps.appendTurn(currentThread.origin, currentThread.pathname, magic);
-        }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         handle.showError('stream-failed', `The model stopped: ${msg}`);
@@ -313,6 +310,9 @@ export default defineContentScript({
       };
       const handle = turnList.appendMagic(magic);
       await runAction(userTurn, magic, handle);
+      if (magic.status === 'done' && currentThread) {
+        currentThread = await threadOps.appendTurn(currentThread.origin, currentThread.pathname, magic);
+      }
     });
 
     async function rerun(oldMagic: MagicTurn) {
@@ -331,7 +331,7 @@ export default defineContentScript({
       };
       const handle = turnList.replaceMagic(oldMagic.id, replacement);
       await runAction(userTurn, replacement, handle);
-      if (currentThread) {
+      if (replacement.status === 'done' && currentThread) {
         currentThread = await threadOps.rerunTurn(currentThread.origin, currentThread.pathname, oldMagic.id, replacement);
       }
     }
