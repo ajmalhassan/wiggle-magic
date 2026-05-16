@@ -122,3 +122,75 @@ html.wm-sidebar-open {
 .wm-chip.clickable { cursor: pointer; }
 .wm-chip.clickable:hover { background: rgba(125, 249, 255, 0.14); }
 .wm-chip.missing { text-decoration: line-through; opacity: 0.5; }
+
+/* ── Composer ── */
+#wm-sidebar .composer-root { display: contents; }
+#wm-sidebar .staged-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+#wm-sidebar .staged-chips:empty { display: none; }
+
+#wm-sidebar .add-btn {
+  align-self: flex-start;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px dashed rgba(125, 249, 255, 0.3);
+  border-radius: 999px;
+  color: #7df9ff;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+#wm-sidebar .add-btn:hover { background: rgba(125, 249, 255, 0.06); }
+
+#wm-sidebar .hero-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+#wm-sidebar .hero-btn {
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #7df9ff, #b07cff);
+  border: 0;
+  border-radius: 999px;
+  color: #0b0d12;
+  font: inherit;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+}
+#wm-sidebar .hero-btn:hover { filter: brightness(1.08); }
+#wm-sidebar .hero-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+#wm-sidebar .composer-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+#wm-sidebar .composer-input {
+  flex: 1;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  color: #e7ecf3;
+  font: inherit;
+}
+#wm-sidebar .composer-input:focus {
+  outline: none;
+  border-color: rgba(125, 249, 255, 0.4);
+}
+#wm-sidebar .composer-input::placeholder { color: #8a93a6; }
+#wm-sidebar .composer-send {
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #7df9ff, #b07cff);
+  border: 0;
+  border-radius: 8px;
+  color: #0b0d12;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
