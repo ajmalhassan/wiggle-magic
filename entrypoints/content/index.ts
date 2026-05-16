@@ -1,6 +1,7 @@
 import './content.css';
 import { renderMarkdownInto } from '@/src/lib/markdown';
 import { createWiggleDetector, DEFAULT_WIGGLE_OPTS } from '@/src/lib/picker/detect-wiggle';
+import { resolveTarget } from '@/src/lib/picker/resolve-target';
 import type { WmSettings, MemoryEntry, MemoryAction } from '@/src/lib/types';
 
 export default defineContentScript({
@@ -1165,26 +1166,6 @@ export default defineContentScript({
       const def: WmSettings = { backend: 'auto', provider: 'openai', apiKey: '', model: '' };
       const got = await chrome.storage.sync.get('wm_settings') as { wm_settings?: Partial<WmSettings> };
       return Object.assign(def, got.wm_settings || {});
-    }
-
-    // ---------- semantic ancestor resolution ----------
-    const SEMANTIC_TAGS = new Set([
-      'p', 'li', 'blockquote',
-      'article', 'section', 'figure', 'picture',
-      'img', 'video', 'audio',
-      'table', 'tr', 'th', 'td',
-      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-      'a', 'button',
-    ]);
-
-    function resolveTarget(el: Element): Element {
-      let cur: Element | null = el;
-      while (cur && cur !== document.body) {
-        if (SEMANTIC_TAGS.has(cur.tagName.toLowerCase())) return cur;
-        if (cur.parentElement && cur.parentElement.children.length > 30) return cur;
-        cur = cur.parentElement;
-      }
-      return el;
     }
 
     // ---------- misc helpers ----------
