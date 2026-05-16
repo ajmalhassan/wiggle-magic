@@ -21,7 +21,9 @@ export interface SavedSelection {
   selector?: string;
 }
 
-export type MemoryAction = 'summary' | 'compare' | 'ask';
+// Note: 'compare' is retained for back-compat with entries saved by earlier
+// versions; new entries never write it.
+export type MemoryAction = 'summary' | 'bullets' | 'ask' | 'compare';
 
 export interface MemoryEntry {
   id: string;

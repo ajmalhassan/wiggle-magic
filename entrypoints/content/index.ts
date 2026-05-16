@@ -60,40 +60,49 @@ export default defineContentScript({
         <span>Preparing your context…</span>
       </div>
       <div class="sheet-state">
-        <button class="close" id="wm-sheet-close" type="button" aria-label="Close">×</button>
         <div class="header">
           <b>Magic</b>
           <span class="backend-pill" id="wm-backend-pill" hidden></span>
+          <div class="header-actions">
+            <button class="icon-btn" id="wm-sidebar-toggle" type="button" aria-label="Toggle sidebar" title="Toggle sidebar">
+              <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                <path fill="currentColor" d="M2 2h12v12H2V2zm1 1v10h10V3H3zm6 0v10h-1V3h1z"/>
+              </svg>
+            </button>
+            <button class="close" id="wm-sheet-close" type="button" aria-label="Close">×</button>
+          </div>
         </div>
-        <div class="chips" id="wm-sheet-chips"></div>
-        <div class="hero" id="wm-hero">
-          <button class="hero-btn" id="wm-hero-summary" type="button">
-            <svg class="sparkle" viewBox="-3 -3 6 6" aria-hidden="true">
-              <polygon points="0,-2.6 0.7,-0.7 2.6,0 0.7,0.7 0,2.6 -0.7,0.7 -2.6,0 -0.7,-0.7" fill="#0b0d12"/>
-            </svg>
-            Summarize
-          </button>
-          <button class="hero-btn" id="wm-hero-compare" type="button" hidden>⇄ Compare these</button>
-        </div>
-        <div class="answer empty" id="wm-sheet-answer"></div>
-        <div class="stale-banner" id="wm-stale" hidden>
-          <span>⚠ Selection changed — answer may be stale</span>
-          <button id="wm-rerun" type="button">↻ Rerun</button>
-        </div>
-        <div class="answer-actions" id="wm-sheet-actions">
-          <button id="wm-save" type="button" aria-label="Save answer">
-            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
-              <path d="M3 2h8l2 2v10H3V2zm2 0v4h6V2H5zM5 9h6v3H5V9z" fill="currentColor"/>
-            </svg>
-            Save
-          </button>
-          <button id="wm-copy" type="button" aria-label="Copy answer">
-            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
-              <path d="M4 2h7v2H6v8H4V2zm2 4h7v9H6V6zm2 2v5h3V8H8z" fill="currentColor"/>
-            </svg>
-            Copy
-          </button>
-          <span class="saved" id="wm-saved-msg" style="display:none">saved ✓</span>
+        <div class="body" id="wm-sheet-body">
+          <div class="chips" id="wm-sheet-chips"></div>
+          <div class="hero" id="wm-hero">
+            <button class="hero-btn" id="wm-hero-summary" type="button">
+              <svg class="sparkle" viewBox="-3 -3 6 6" aria-hidden="true">
+                <polygon points="0,-2.6 0.7,-0.7 2.6,0 0.7,0.7 0,2.6 -0.7,0.7 -2.6,0 -0.7,-0.7" fill="#0b0d12"/>
+              </svg>
+              Summarize
+            </button>
+            <button class="hero-btn hero-btn--alt" id="wm-hero-bullets" type="button">• Bullets</button>
+          </div>
+          <div class="answer empty" id="wm-sheet-answer"></div>
+          <div class="stale-banner" id="wm-stale" hidden>
+            <span>⚠ Selection changed — answer may be stale</span>
+            <button id="wm-rerun" type="button">↻ Rerun</button>
+          </div>
+          <div class="answer-actions" id="wm-sheet-actions">
+            <button id="wm-save" type="button" aria-label="Save answer">
+              <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+                <path d="M3 2h8l2 2v10H3V2zm2 0v4h6V2H5zM5 9h6v3H5V9z" fill="currentColor"/>
+              </svg>
+              Save
+            </button>
+            <button id="wm-copy" type="button" aria-label="Copy answer">
+              <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+                <path d="M4 2h7v2H6v8H4V2zm2 4h7v9H6V6zm2 2v5h3V8H8z" fill="currentColor"/>
+              </svg>
+              Copy
+            </button>
+            <span class="saved" id="wm-saved-msg" style="display:none">saved ✓</span>
+          </div>
         </div>
         <div class="ask">
           <input id="wm-sheet-input" type="text" placeholder="Ask anything about your selection…" autocomplete="off" />
@@ -146,7 +155,9 @@ export default defineContentScript({
     const savedMsg     = root.querySelector<HTMLElement>('#wm-saved-msg')!;
     const heroRowEl    = root.querySelector<HTMLElement>('#wm-hero')!;
     const heroSummary  = root.querySelector<HTMLButtonElement>('#wm-hero-summary')!;
-    const heroCompare  = root.querySelector<HTMLButtonElement>('#wm-hero-compare')!;
+    const heroBullets  = root.querySelector<HTMLButtonElement>('#wm-hero-bullets')!;
+    const sidebarToggle = root.querySelector<HTMLButtonElement>('#wm-sidebar-toggle')!;
+    const sheetBody    = root.querySelector<HTMLElement>('#wm-sheet-body')!;
     const staleBanner  = root.querySelector<HTMLElement>('#wm-stale')!;
     const rerunBtn     = root.querySelector<HTMLButtonElement>('#wm-rerun')!;
     const backendPill  = root.querySelector<HTMLElement>('#wm-backend-pill')!;
@@ -573,10 +584,9 @@ export default defineContentScript({
         return;
       }
       renderSheetChips();
-      heroCompare.hidden = picker.picks.length < 2;
 
       // If we already have an answer, mark it stale.
-      if (sheetState.activeAction !== null) {
+      if (sheetState.activeAction !== null && currentAnswer.length > 0) {
         sheetState.stale = true;
         staleBanner.hidden = false;
       }
@@ -592,7 +602,7 @@ export default defineContentScript({
       staleBanner.hidden = true;
       sheetState.stale = false;
       if (sheetState.activeAction === 'summary') runSummarize();
-      else if (sheetState.activeAction === 'compare') runCompare();
+      else if (sheetState.activeAction === 'bullets') runBullets();
       else if (sheetState.activeAction === 'ask') {
         // Re-ask the same question.
         sheetInput.value = currentQuestion;
@@ -602,6 +612,7 @@ export default defineContentScript({
 
     function showSheet(payloads: Payload[]): void {
       picker.mode = 'sheet';
+      document.documentElement.style.overflow = 'hidden';
       cursor.classList.remove('visible');
       highlight.style.opacity = '0';
 
@@ -621,7 +632,6 @@ export default defineContentScript({
       sheetState.stale = false;
       heroRowEl.hidden = false;
       staleBanner.hidden = true;
-      heroCompare.hidden = picker.picks.length < 2;
 
       renderSheetChips();
 
@@ -642,6 +652,7 @@ export default defineContentScript({
         for (const sel of picker.picks) sel.marker.remove();
         picker.picks.length = 0;
         document.body.classList.remove('wm-active');
+        document.documentElement.style.overflow = '';
         samples.length = 0;
         lastHighlightEl = null;
         lastLeaf = null;
@@ -680,10 +691,10 @@ export default defineContentScript({
           }
           textNode.appendData(chunk);
           currentAnswer += chunk;
-          answerEl.scrollTop = answerEl.scrollHeight;
+          sheetBody.scrollTop = sheetBody.scrollHeight;
         });
         renderMarkdownInto(answerEl, currentAnswer);
-        answerEl.scrollTop = answerEl.scrollHeight;
+        sheetBody.scrollTop = sheetBody.scrollHeight;
         actionsEl.classList.add('show');
       } catch (err) {
         if (err && (err as Error).name === 'AbortError') return;
@@ -726,10 +737,10 @@ export default defineContentScript({
           }
           textNode.appendData(chunk);
           currentAnswer += chunk;
-          answerEl.scrollTop = answerEl.scrollHeight;
+          sheetBody.scrollTop = sheetBody.scrollHeight;
         });
         renderMarkdownInto(answerEl, currentAnswer);
-        answerEl.scrollTop = answerEl.scrollHeight;
+        sheetBody.scrollTop = sheetBody.scrollHeight;
         actionsEl.classList.add('show');
       } catch (err) {
         if (err && (err as Error).name === 'AbortError') return;
@@ -743,17 +754,17 @@ export default defineContentScript({
       }
     }
 
-    async function runCompare(): Promise<void> {
-      if (picker.picks.length < 2 || askController) return;
+    async function runBullets(): Promise<void> {
+      if (picker.picks.length === 0 || askController) return;
       heroRowEl.hidden = true;
-      sheetState.activeAction = 'compare';
+      sheetState.activeAction = 'bullets';
       sheetState.stale = false;
       staleBanner.hidden = true;
 
-      currentQuestion = 'Compare selections';
+      currentQuestion = 'Bulletize selection';
       currentAnswer = '';
       answerEl.classList.remove('empty');
-      answerEl.innerHTML = '<span class="placeholder">Comparing…</span>';
+      answerEl.innerHTML = '<span class="placeholder">Bulletizing…</span>';
       actionsEl.classList.remove('show');
       savedMsg.style.display = 'none';
       answerSavedThisRun = false;
@@ -763,7 +774,7 @@ export default defineContentScript({
       try {
         const payloads = picker.picks.map(p => p.payload);
         await askAI(
-          `Compare these ${payloads.length} selections. Use a short Markdown table when the items are clearly comparable; otherwise contrast them in concise bullets. Lead with the biggest differences.`,
+          'Reformat these selections as a concise Markdown bulleted list of the main points. One bullet per key point. No preamble, no headings.',
           payloads,
           askController.signal,
           (chunk, isFirst) => {
@@ -773,18 +784,18 @@ export default defineContentScript({
             }
             textNode.appendData(chunk);
             currentAnswer += chunk;
-            answerEl.scrollTop = answerEl.scrollHeight;
+            sheetBody.scrollTop = sheetBody.scrollHeight;
           },
         );
         renderMarkdownInto(answerEl, currentAnswer);
-        answerEl.scrollTop = answerEl.scrollHeight;
+        sheetBody.scrollTop = sheetBody.scrollHeight;
         actionsEl.classList.add('show');
       } catch (err) {
         if (err && (err as Error).name === 'AbortError') return;
         console.error('[wiggle-magic] action failed:', err);
         sheetState.activeAction = null;
         heroRowEl.hidden = false;
-        showError(classifyError(err, runCompare));
+        showError(classifyError(err, runBullets));
       } finally {
         answerEl.classList.remove('streaming');
         askController = null;
@@ -1273,7 +1284,7 @@ export default defineContentScript({
       pick,
       resolveTarget,
     };
-    const sheet   = { show: showSheet, close: closeSheet, askAI: submitAsk, save: saveCurrentAnswer, copy: copyCurrentAnswer, onChipRemove: onChipRemoveInSheet, runSummarize, runCompare, rerun, showError };
+    const sheet   = { show: showSheet, close: closeSheet, askAI: submitAsk, save: saveCurrentAnswer, copy: copyCurrentAnswer, onChipRemove: onChipRemoveInSheet, runSummarize, runBullets, rerun, showError };
 
     // ---------- bindings ----------
     document.addEventListener('mousemove', wiggle.onMove, { passive: true });
@@ -1302,7 +1313,10 @@ export default defineContentScript({
       if (e.key === 'Enter') { e.preventDefault(); sheet.askAI(); }
     });
     heroSummary.addEventListener('click', runSummarize);
-    heroCompare.addEventListener('click', runCompare);
+    heroBullets.addEventListener('click', runBullets);
+    sidebarToggle.addEventListener('click', () => {
+      sheetEl.classList.toggle('sidebar');
+    });
     saveBtn.addEventListener('click', sheet.save);
     copyBtn.addEventListener('click', sheet.copy);
     rerunBtn.addEventListener('click', rerun);
